@@ -1,0 +1,15 @@
+<?xml version="1.0" ?>
+<Config>
+    <Video>
+        <Width value="640" />
+        <Height value="480" />
+        <Fullscreen value="Yes" />
+    </Video>
+    <Keys>
+        <upKey value="273" />
+        <downKey value="274" />
+        <rightKey value="275" />
+        <leftKey value="276" />
+        <shotKey value="306" />
+    </Keys>
+</Config>
