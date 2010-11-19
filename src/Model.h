@@ -47,6 +47,9 @@
 #include <malloc.h>
 #endif
 
+// The maximum size in characters that the name can be.
+#define MAX_MODEL_NAME_LENGTH 24
+
 
 #define MODEL_FORMAT_VERSION 4
 
@@ -73,7 +76,7 @@ class Model{
 public:
 
 	Model();
-	Model(const char * fileName, bool buildCollisionModel = false);
+	Model(const char* modelName, bool buildCollisionModel = false);
 	~Model();
 	//u32 getTextureId(int texture);
 	//void setTextureId(u32 textureId, int texture);
@@ -108,15 +111,17 @@ private:
 	// Textures
     GXTexObj* textureObjs;
 	// Not sure this is needed:
-	char **textureNames;
+	//char **textureNames;
     u16 num_textures;
 
-	char filename[256];
-	char name[20];
+	//--DCN: Going to leave this out
+	//char filename[256];
+	char name[MAX_MODEL_NAME_LENGTH];
+	
     
     void buildDisplayList();
     void loadTGATexture(const char *texture, GXTexObj& textureId);
-    int getNumberOfUntexturedFaces();
+    int untexturedFaces();
 
 };
 
@@ -137,7 +142,7 @@ class ModelList{
 public:
     ModelList();
    ~ModelList();
-    void push(Model*);
+    void push(Model* model);
     void clear();
     Model* getModel(int index);
     Model* getModel(const char* name);

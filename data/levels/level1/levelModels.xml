@@ -1,9 +1,0 @@
-<?xml version="1.0" ?>
-<Models>
-    <Model name="asteroid1" file="mmf/asteroid1.mmf">
-        <Sphere Bone="0" x="0.140625" y="-0.010125" z="0.000000" radius="2.324117" />
-    </Model>
-    <Model name="asteroid2" file="mmf/asteroid2.mmf">
-        <Sphere Bone="0" x="-0.050062" y="-0.006750" z="-0.018000" radius="1.186739" />
-    </Model>
-</Models>

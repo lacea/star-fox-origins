@@ -1,7 +1,0 @@
-<?xml version="1.0" ?>
-<Models>
-    <Model name="mmf/ship.mmf">
-        <!-- These spheres are for collision detection -->
-        <Sphere Bone="0" x="0.140625" y="-0.010125" z="0.000000" radius="2.324117" />
-    </Model>
-</Models>

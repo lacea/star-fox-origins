@@ -43,10 +43,14 @@ Model::Model(): collisionModel(NULL),
 				ax(0.0f), ay(0.0f), az(0.0f),
 				sizeX(0.0f), sizeY(0.0f), sizeZ(0.0f),
 				num_verts(0), num_faces(0),
-				textureObjs(NULL), textureNames(NULL), num_textures(0)
+				textureObjs(NULL), 
+				//textureNames(NULL), 
+				num_textures(0)
 {
-	memset(name,0,20);
-	memset(filename,0,256);
+	
+	memset(name,0,MAX_MODEL_NAME_LENGTH);
+	//memset(filename,0,256);
+
 }
 
 //----------------------------------------
@@ -67,8 +71,11 @@ Model::Model(const char * fileName, bool buildCollisionModel):
 				ax(0.0f), ay(0.0f), az(0.0f),
 				sizeX(0.0f), sizeY(0.0f), sizeZ(0.0f),
 				num_verts(0), num_faces(0),
-				textureObjs(NULL), textureNames(NULL), num_textures(0)
+				textureObjs(NULL), 
+				//textureNames(NULL), 
+				num_textures(0)
 {
+	memset(name,0,MAX_MODEL_NAME_LENGTH);
 	loadModel(fileName, buildCollisionModel);
 }
 
@@ -82,7 +89,7 @@ Model::Model(const char * fileName, bool buildCollisionModel):
 //----------------------------------------
 
 Model::~Model(){
-	//--DCN: Redone for c++
+
 	delete[] vList; 
 	vList = NULL;
 	delete[] fList;
@@ -90,6 +97,8 @@ Model::~Model(){
 	delete collisionModel;
 	collisionModel = NULL;
 	
+	//--DCN: I am doing away with texture names
+	/*
 	if(num_textures > 0){
 		int i = num_textures - 1;
 		do{
@@ -100,9 +109,11 @@ Model::~Model(){
 	}
 	delete[] textureNames;
 	textureNames = NULL;
+	//*/
 
 	delete[] textureObjs;
 	textureObjs = NULL;
+
 
 
 #ifdef DIFFERENT_ALLOC
@@ -125,18 +136,22 @@ Model::~Model(){
 //
 // @pre     filename MUST be a valid xml file [!!IMPORTANT!!]
 // @post    The model has been loaded and is ready to go
-// @param   fileName: The file to load in our model variables from.
+// @param   modelName: The name of the model (used to load the file too)
 // @param   buildCollisionModel: Build for collision detection?
 // @return  bool: true if loaded, false if there was a problem
 //
 //----------------------------------------
 
-bool Model::loadModel(const char * filename,  bool buildCollisionModel){
+bool Model::loadModel(const char* modelName,  bool buildCollisionModel){
 
 
-	TiXmlDocument *doc = new TiXmlDocument(filename);
+	std::string fileName = PATH_MODELS;
+	fileName += modelName;
+	fileName += ".xml";
+
+	TiXmlDocument *doc = new TiXmlDocument(fileName.c_str());
 	if (!doc->LoadFile()){
-		fprintf(stderr, "Can't open model: %s\n", filename);
+		fprintf(stderr, "Can't open model: %s\n", fileName.c_str());
 		return false;
 	}
 	
@@ -144,11 +159,16 @@ bool Model::loadModel(const char * filename,  bool buildCollisionModel){
 	TiXmlHandle model = docHandle.FirstChild("model");
 	
 	if(!model.ToElement()){
-		printf("No model information for: %s\n", filename);
+		fprintf(stderr, "No model information for: %s\n",  fileName.c_str());
 		doc->Clear();
 		delete doc;
 		return false;
 	}
+
+	//TODO: We should make this dynamic:
+	// Copy the name
+	memcpy(name, modelName, MAX_MODEL_NAME_LENGTH);
+
 
 	// Not needed
 	//TiXmlElement* version = model->FirstChild("version").ToElement();
@@ -157,7 +177,8 @@ bool Model::loadModel(const char * filename,  bool buildCollisionModel){
 	num_textures = atoi(node.ToElement()->Attribute("num"));
 
 	if (num_textures > 0){
-		textureNames = new char*[num_textures];
+		//--DCN: I am doing away with texture names.
+		//textureNames = new char*[num_textures];
 		textureObjs = new GXTexObj[num_textures];
 		std::string texture;
 
@@ -165,13 +186,14 @@ bool Model::loadModel(const char * filename,  bool buildCollisionModel){
 			//--DCN: It is my understanding that textureNames 
 			// are needed only for this:
 			
-			/*
+			//*
 			// New:
 			TiXmlNode* texNode = model.FirstChild("textures").Child("name", i).ToElement();
 			texture = PATH_TEXTURES;	
 			texture += texNode->FirstChild()->Value();
 			//*/
-			//*
+
+			/*
 			// Old:
 			TiXmlNode* texNode = node.Child("name", i).ToElement();
 
@@ -284,9 +306,18 @@ bool Model::loadModel(const char * filename,  bool buildCollisionModel){
 	// Build the display list with the variables gathered.
 	buildDisplayList();
 
-	// Make a new collision model based on our faces (probably a better way)
+	// Make a new collision model based on our faces (there's probably a better way)
+	
+	//
+	//
+	//
+	// Once again, I blame YOU! I don't think this is being built.
+	//
+	//
+	//
 	if(buildCollisionModel){
 		collisionModel = new CollisionModel3DImpl(false);
+	
 		for (s32 i = 0; i < num_faces; ++i){
 			collisionModel->addTriangle(vList[fList[i].v[0]].v, vList[fList[i].v[1]].v, vList[fList[i].v[2]].v);
 		}
@@ -298,7 +329,7 @@ bool Model::loadModel(const char * filename,  bool buildCollisionModel){
 
 //----------------------------------------
 //
-// Function: getNumberOfUntexturedFaces
+// Function: untexturedFaces
 //
 //		Returns the number of faces without texturing in the model
 //
@@ -309,7 +340,7 @@ bool Model::loadModel(const char * filename,  bool buildCollisionModel){
 //
 //----------------------------------------
 
-int Model::getNumberOfUntexturedFaces(){
+int Model::untexturedFaces(){
 	if (num_faces == 0) return 0;
 	int num = 0;    
 	int i = num_faces - 1;
@@ -339,7 +370,7 @@ void Model::buildDisplayList(){
 	int i = 0, j = 0;
 	if (num_faces == 0) return;
 
-	int unTexFaces = getNumberOfUntexturedFaces();
+	int unTexFaces = untexturedFaces();
 
 
 	static const u32 TEMP_SIZE = 16384;
@@ -676,13 +707,12 @@ void Model::loadTGATexture(const char *fileName, GXTexObj& textureObj){
 
 //----------------------------------------
 //
-// Function: loadTGATexture
+// Function: render
 //
-//		Loads in a .tga file for the texture.
-//		(Exactly the same as LoadFont!)
+//		Render the model to screen
 //
 // @pre     -
-// @post    The model has been rendered to the display buffer
+// @post    The display list for the model has been called.
 // @param   modelview: The model view matrix to be used for the model
 // @return  -
 //
@@ -690,7 +720,7 @@ void Model::loadTGATexture(const char *fileName, GXTexObj& textureObj){
 
 void Model::render(Mtx modelview){
 
-	Mtx rot, trans;
+	Mtx rot;
 
 	// Rotate
 	guMtxIdentity(rot);
@@ -700,9 +730,7 @@ void Model::render(Mtx modelview){
 	guMtxConcat(modelview, rot, modelview);
 
 	//Translate
-	guMtxIdentity(trans);
-	guMtxTrans(trans, x, y, z);
-	guMtxConcat(modelview, trans, modelview);
+	guMtxTransApply(modelview, modelview, x, y, z);
 
 	GX_LoadPosMtxImm(modelview, GX_PNMTX0);
 
@@ -737,7 +765,7 @@ ModelList::~ModelList(){
 	clear();
 }
 
-void ModelList::push(Model * model){
+void ModelList::push(Model* model){
 	list.push_back(model);
 }
 
@@ -750,13 +778,12 @@ void ModelList::clear(){
 }
 
 Model* ModelList::getModel(s32 index){
-	//if (index < 0 || index >= list.size())
 	if (u32(index) >= list.size())
 		return 0;
 	return list.at(index);
 }
 
-Model* ModelList::getModel(const char * name){
+Model* ModelList::getModel(const char* name){
 	for(u32 i = 0, mListSize = list.size(); i < mListSize; ++i){
 		if (strcmp(name, list[i]->getName()) == 0)
 			return list[i];
