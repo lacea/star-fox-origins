@@ -20,7 +20,7 @@
 
 // Baseobject automatically initializes everything to 0.
 // Object3D::Object3D() : BaseObject(),
-// Or cimply:
+// Or simply:
 Object3D::Object3D() : 
 	ax(0.0f), ay(0.0f), az(0.0f),
 	dx(0.0f), dy(0.0f), dz(0.0f),

@@ -51,7 +51,7 @@ static litColor litcolors[] = {
 
 
 
-// From video.cpp (trying to eliminate it entirely)
+// Frames per second
 float FPS(){
 
     static float fFPS      = 0.0f;
@@ -153,7 +153,7 @@ float Level::updateSpeedFactor(){
 
 // GAAAAAAAAAAAAAAAAAAAAAAAAAH! Below are three TERRIBLE functions!
 #endif
-//bool Level::bills(Billboard * bill, float speedFactor){
+
 static bool bills(Billboard * bill, Level* lvl, float speedFactor){
 	if(bill->pos.z > lvl->camera->pos.z)    {   
 		bill->pos.x = static_cast<float>( (rand() % 80) - 40);
@@ -208,30 +208,43 @@ bool explosionCallback(Billboard * bill, Level* lvl, float speedFactor){
 //----------------------------------------
 
 void Level::loadLevelFile(string xmlFile){
-	Object3D *tempObject = NULL;
+	
 	TiXmlDocument *doc = new TiXmlDocument(xmlFile.c_str());
+	
 	if (!doc->LoadFile()){
 		fprintf(stderr, "Can't open xml level\n");
 		return;
 	}
 	
-	// We're going to do this my way:
 	TiXmlHandle docHandle(doc);
-	if(!docHandle.FirstChild("object").ToElement()){
+	TiXmlHandle objects = docHandle.FirstChild("objects");
+
+	if(!objects.ToElement()){
 		fprintf(stderr, "No models in the level\n");
 		doc->Clear();
 		delete doc;
 		return;
 	}
 	
-	for(TiXmlElement* object = docHandle.FirstChild("object").ToElement(); object; object = object->NextSiblingElement("object")){ 
+	Object3D *tempObject = NULL;
+
+	TiXmlElement* object = objects.FirstChild("object").ToElement();
+
+	for(; object; object = object->NextSiblingElement("object")){ 
+
+		// This traces
+		//printf("Helloooooo\n");
+
+		// Get the name of the model
+		const char* modelName = object->Attribute("name");
+
+		// THIS does not trace:
+		//printf("Model Name: %s\n", modelName);	
+		// Therefore: The line "object->Attribute("name")" is wrong.
 
 		TiXmlElement* attr = object->FirstChild("position")->ToElement();
-		
+		// THIS is not being called! attr must be garbage
 		if(attr){
-			//--DCN: We are assuming that the xml is structured correctly!
-
-			const char* modelName = object->Attribute("name");
 
 			tempObject = new Object3D(modelList->getModel(modelName));
 			
@@ -279,6 +292,18 @@ bool Level::init(u32 level){
 	Model* model;
 
 	srand(0);
+
+	// Convert the level number into a file name.
+	stringstream levelStr(stringstream::in | stringstream::out);
+	if(level <=9)
+		levelStr << "0";
+	levelStr << level;
+	string xmlFile = string(PATH_LEVELS"/level") + levelStr.str() + "/level.xml";
+	//string xmlFile = PATH_LEVELS"/level1/level.xml";
+	
+	// Load the level from the file
+	loadLevelFile(xmlFile);
+
     
 	// We are going to move all this stuff into the Level xml file.
 	// A list of models, textures and such will be listed in there
@@ -299,21 +324,27 @@ bool Level::init(u32 level){
 		modelList->push(model);
 	}
 	//*/
+
+	///////////////////////////////////////////
+	// This is specific to Level 1 -- PUT INTO XML FILE!
+
+
 	// Load and push all the textures
 	objectTextures->pushTexture(PATH_TEXTURES "flare.tga");
 	objectTextures->pushTexture(PATH_TEXTURES "particle.tga");
 	objectTextures->pushTexture(PATH_TEXTURES "explos01.tga");
 
+
 	// Load and push all the models
-	model = new Model(PATH_MODELS "ship.xml", true);
+	model = new Model("ship", true);
 	modelList->push(model);
-	model = new Model(PATH_MODELS "laser.xml", true);
+	model = new Model("laser", true);
 	modelList->push(model);
-	model = new Model(PATH_MODELS "asteroid1.xml", true);
+	model = new Model("asteroid1", true);
 	modelList->push(model);
-	model = new Model(PATH_MODELS "asteroid2.xml", true);
+	model = new Model("asteroid2", true);
 	modelList->push(model);
-	model = new Model(PATH_MODELS "tunnel.xml",true);
+	model = new Model("tunnel",true);
 	modelList->push(model);
 
     
@@ -342,17 +373,6 @@ bool Level::init(u32 level){
 	}
 
 
-	// I think this is working now:
-	/*
-	stringstream levelStr(stringstream::in | stringstream::out);
-	levelStr << level;
-	string xmlFile = string(PATH_LEVELS"/level") + levelStr.str() + "/level.xml";
-	//*/
-	string xmlFile = PATH_LEVELS"/level1/level.xml";
-	
-	// This is as far as I got in debugging. I think this
-	// may be the culprit:
-	loadLevelFile(xmlFile);
 
 
 	///////////////////////////////////////////
@@ -368,7 +388,6 @@ bool Level::init(u32 level){
 
 	//dtCreateObject(static_cast<BaseObject *>(tempObject), tempObject->model->shape);
 	objectList->push(tempObject);
-
 
 
 	///////////////////////////////////////////
@@ -452,7 +471,8 @@ bool Level::init(u32 level){
 	//GX_SetFog(GX_FOG_NONE, 1.0f, 100.0f, 0.0f, 1.0f, fogColor);
 
 
-	Render();
+	// I don't think we want to render just yet.
+	//Render();
 	return true;
 }
 
@@ -680,12 +700,6 @@ void Level::renderShots(Mtx view){
 void Level::Render(){
 	float fps = FPS();
     
-	/*
-	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-	glMatrixMode( GL_MODELVIEW );
-	glLoadIdentity();
-	//*/
-
 	// Change the camera stuff
 
 	//--DCN: I dislike multiplying by random numbers
@@ -780,7 +794,7 @@ void Level::Render(){
 	guOrtho(projection,0,rmode->fbWidth,0,rmode->efbHeight,0,300);
 	GX_LoadProjectionMtx(projection, GX_ORTHOGRAPHIC);
 
-	PrintText(0, 0, 0, 1.0f, 1.0f, "FPS: %6.1f Cols: %d", fps, num_collisions);
+	PrintText(0, 0, 0, 1.0f, 1.0f, "FPS: %6.1f", fps);
 	//PrintText(0, 0, 20, 1.0f, 1.0f, " Particles: %d", billList->getCount());
 	PrintText(0, 0, 20, 1.0f, 1.0f, " AX: %7.02f", player->ax);
 	PrintText(0, 0, 40, 1.0f, 1.0f, " AY: %7.02f", player->ay);
@@ -811,7 +825,7 @@ void Level::moveBillboards(float speedFactor){
 		bill = static_cast<Billboard *>(*iterator);
 		if (bill->active){
 #ifdef TODO
-
+			// This is bad, must change the class!
 #endif
 			bill->update(this, speedFactor);
 			iterator++;
@@ -825,9 +839,8 @@ void Level::moveBillboards(float speedFactor){
 		bill = static_cast<Billboard *>(*iterator);
 		if (bill->active){
 #ifdef TODO
-
+			// This is bad, must change the class!
 #endif
-			// We're passing in the level too, (HATE!)
 			bill->update(this, speedFactor);
 			++iterator;
 		}
@@ -853,9 +866,9 @@ void Level::moveAsteroids(float speedFactor){
 #endif			
 			//--DCN: This is just terrible. I must change this. BLEH!
 
-			bill = new  (std::nothrow) Billboard(camera, objectTextures->getTexture(2),
-												  reinterpret_cast<billFunc>(&explosionCallback),
-												  tempObject->pos.x, tempObject->pos.y, tempObject->pos.z, 5.0f, 5.0f);
+			bill = new Billboard(camera, objectTextures->getTexture(2),
+								 reinterpret_cast<billFunc>(&explosionCallback),
+								 tempObject->pos.x, tempObject->pos.y, tempObject->pos.z, 5.0f, 5.0f);
 
 
 			if (bill){
@@ -924,9 +937,9 @@ void Level::moveShots(float speedFactor){
 			//--DCN: This is just terrible. I must change this. BLEH!
 
 			//create the spark in front of the spaceship cannon
-			bill = new  (std::nothrow) Billboard(camera, objectTextures->getTexture(0),
-												  reinterpret_cast<billFunc>(&mShotCallbackL1),
-												  0.0f, 0.0f, 0.0f, 0.6f, 0.3f);
+			bill = new Billboard(camera, objectTextures->getTexture(0),
+								 reinterpret_cast<billFunc>(&mShotCallbackL1),
+								 0.0f, 0.0f, 0.0f, 0.6f, 0.3f);
 			if (bill){
 				billList->push(bill);
 			}
@@ -969,11 +982,15 @@ void Level::Logic(){
 	linePos = player->pos;// + player->rMatrix * a3dssVector3(0.0f ,-0.2f, -6.0f);
 	lineAngle = a3dssVector3(player->ax, player->ay, player->az);
     
-	// Collision detection
 
+	// Currently, collision detection DOES NOT WORK!
+	/////////////////////////
+	// Collision detection //
+	/////////////////////////
+	//*
 	// Test collisions of shot with asteroids
 	objectIterator iterator2; // = objectList->begin();
-    
+
 	for(objectIterator shotItr = playerShotList->begin(), shotItrEnd = playerShotList->end(); shotItr != shotItrEnd; ++shotItr){
 		PlayerShot *shot = static_cast<PlayerShot *>(*shotItr);
 		if(!shot->active)
@@ -999,22 +1016,21 @@ void Level::Logic(){
 			}
 		}
 	}
-    
+
+
 	//Test collisions of ship with asteroids
 	Matrix3D m = TranslateMatrix3D(Vector3D(player->pos.x, player->pos.y, player->pos.z));
 	m.rotate(Vector3D(player->ax, player->ay, player->az));
 	player->model->collisionModel->setTransform(m);
+
 	for(iterator2 = objectList->begin(); iterator2 != objectList->end(); ++iterator2){
 		if((*iterator2)->active){
 			Object3D *obj = static_cast<Object3D *>(*iterator2);
-			/*
-			float origin[3];
-			origin[0]= (*iterator2)->pos.x;
-			origin[1]= (*iterator2)->pos.y;
-			origin[2]= (*iterator2)->pos.z;
-			//*/
+exit(1);
+//
+//THIS is where it all comes crashing down:
+//
 			if(obj->model->collisionModel){
-
 				Matrix3D m = TranslateMatrix3D(Vector3D(obj->pos.x, obj->pos.y, obj->pos.z));
 				m.rotate(Vector3D(obj->ax, obj->ay, obj->az));
 				obj->model->collisionModel->setTransform(m);
@@ -1026,11 +1042,9 @@ void Level::Logic(){
 			}
 		}
 	}
+
+	//*/
 }
-
-
-//TODO! Replace the player::move code with this code!
-
 
 //----------------------------------------
 //
@@ -1050,8 +1064,8 @@ void Level::Input(){
 
 	// Would it be better to just grab the whole thing once?
 	// i.e.  wiiData = WPAD_Data(WPAD_CHAN_0);
-	WPAD_Orientation(WPAD_CHAN_0, &player->orient);
-	WPAD_GForce(WPAD_CHAN_0, &player->gforce);
+	//WPAD_Orientation(WPAD_CHAN_0, &player->orient);
+	//WPAD_GForce(WPAD_CHAN_0, &player->gforce);
 	WPAD_Accel(WPAD_CHAN_0, &player->accel);
 
 

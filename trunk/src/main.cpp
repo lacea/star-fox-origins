@@ -94,7 +94,7 @@ int main(){
 	//atexit(newExit);
 
 	// Initialize the console
-	log_console_init(rmode, 0, 20, 30, rmode->fbWidth - 40, rmode->xfbHeight - 60);
+	log_console_init(rmode, 0, 20, 30, rmode->fbWidth - 100, rmode->xfbHeight - 160);
 	log_console_enable_video(true);
 
 
@@ -102,7 +102,7 @@ int main(){
 	{
 		static u32 time = 0;
 
-		while(time < 200)	{
+		while(time < 100)	{
 			time++;
 			printf(".");			
 		}
@@ -139,7 +139,7 @@ int main(){
 
 
 
-	log_console_enable_video(false);
+	//log_console_enable_video(false);
 
 
 	// Go through the main loop
@@ -160,7 +160,7 @@ int main(){
 
 		// Render
 		gameState->Render();
-
+exit(0);
 
 		// Done rendering
 		GX_DrawDone();
