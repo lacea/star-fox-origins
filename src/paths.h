@@ -30,6 +30,7 @@
 #define PATH_MODELS		PATH_DATA"models/"
 #define PATH_FONT		PATH_DATA"fonts/"
 
+#define PATH_ENEMY_PATHS PATH_DATA"enemypaths/"
 
 
 #endif

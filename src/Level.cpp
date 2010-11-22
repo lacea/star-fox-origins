@@ -210,7 +210,6 @@ bool explosionCallback(Billboard * bill, Level* lvl, float speedFactor){
 void Level::loadLevelFile(string xmlFile){
 	
 	TiXmlDocument *doc = new TiXmlDocument(xmlFile.c_str());
-	
 	if (!doc->LoadFile()){
 		fprintf(stderr, "Can't open xml level\n");
 		return;
@@ -219,7 +218,7 @@ void Level::loadLevelFile(string xmlFile){
 	TiXmlHandle docHandle(doc);
 	TiXmlHandle objects = docHandle.FirstChild("objects");
 
-	if(!objects.ToElement()){
+	if(!objects.Element()){
 		fprintf(stderr, "No models in the level\n");
 		doc->Clear();
 		delete doc;
@@ -228,25 +227,21 @@ void Level::loadLevelFile(string xmlFile){
 	
 	Object3D *tempObject = NULL;
 
-	TiXmlElement* object = objects.FirstChild("object").ToElement();
-
-	for(; object; object = object->NextSiblingElement("object")){ 
-
-		// This traces
-		//printf("Helloooooo\n");
-
+	//*
+	TiXmlNode* object = objects.FirstChild("object").Element();
+	for(; object; object = object->NextSibling()){ 
+		
+		TiXmlAttribute* pAttrib = object->ToElement()->FirstAttribute();
 		// Get the name of the model
-		const char* modelName = object->Attribute("name");
-
-		// THIS does not trace:
-		//printf("Model Name: %s\n", modelName);	
-		// Therefore: The line "object->Attribute("name")" is wrong.
-
+		string modelName = pAttrib->Value();
+		// Have to use fprintf for some reason!
+		//fprintf(stderr, "Model Name: %s\n", modelName.c_str());	
+		
 		TiXmlElement* attr = object->FirstChild("position")->ToElement();
-		// THIS is not being called! attr must be garbage
+		
 		if(attr){
-
-			tempObject = new Object3D(modelList->getModel(modelName));
+			//fprintf(stderr, "attr is here, %s \n", attr->Attribute("x"));
+			tempObject = new Object3D(modelList->getModel(modelName.c_str()));
 			
 			tempObject->pos.x = atof(attr->Attribute("x"));
 			tempObject->pos.y = atof(attr->Attribute("y"));
@@ -269,6 +264,7 @@ void Level::loadLevelFile(string xmlFile){
 
 		}
 	}
+	//*/
 }
 
 //----------------------------------------
@@ -1026,11 +1022,11 @@ void Level::Logic(){
 	for(iterator2 = objectList->begin(); iterator2 != objectList->end(); ++iterator2){
 		if((*iterator2)->active){
 			Object3D *obj = static_cast<Object3D *>(*iterator2);
-exit(1);
+//
 //
 //THIS is where it all comes crashing down:
-//
-			if(obj->model->collisionModel){
+			//*
+			if(obj->model->collisionModel != NULL){
 				Matrix3D m = TranslateMatrix3D(Vector3D(obj->pos.x, obj->pos.y, obj->pos.z));
 				m.rotate(Vector3D(obj->ax, obj->ay, obj->az));
 				obj->model->collisionModel->setTransform(m);
@@ -1039,11 +1035,12 @@ exit(1);
 					if ((*iterator2)->destroyable)
 						(*iterator2)->active = false;
 				}
-			}
+			}exit(1);
+			//*/
 		}
 	}
 
-	//*/
+	
 }
 
 //----------------------------------------

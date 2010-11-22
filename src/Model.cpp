@@ -96,25 +96,8 @@ Model::~Model(){
 	fList = NULL;
 	delete collisionModel;
 	collisionModel = NULL;
-	
-	//--DCN: I am doing away with texture names
-	/*
-	if(num_textures > 0){
-		int i = num_textures - 1;
-		do{
-			delete[] textureNames[i];
-			textureNames[i] = NULL;
-			--i;
-		}while(i >= 0);
-	}
-	delete[] textureNames;
-	textureNames = NULL;
-	//*/
-
 	delete[] textureObjs;
 	textureObjs = NULL;
-
-
 
 #ifdef DIFFERENT_ALLOC
 	if(displayList)
@@ -134,7 +117,7 @@ Model::~Model(){
 //		display list for the model, and (if applicable)
 //		builds a collision detection model.
 //
-// @pre     filename MUST be a valid xml file [!!IMPORTANT!!]
+// @pre     modelName MUST be a valid name!
 // @post    The model has been loaded and is ready to go
 // @param   modelName: The name of the model (used to load the file too)
 // @param   buildCollisionModel: Build for collision detection?
@@ -158,7 +141,7 @@ bool Model::loadModel(const char* modelName,  bool buildCollisionModel){
 	TiXmlHandle docHandle(doc);
 	TiXmlHandle model = docHandle.FirstChild("model");
 	
-	if(!model.ToElement()){
+	if(!model.Element()){
 		fprintf(stderr, "No model information for: %s\n",  fileName.c_str());
 		doc->Clear();
 		delete doc;
@@ -174,48 +157,27 @@ bool Model::loadModel(const char* modelName,  bool buildCollisionModel){
 	//TiXmlElement* version = model->FirstChild("version").ToElement();
 	//TiXmlElement* offset = model->FirstChild("offset").ToElement();
 	TiXmlHandle node = model.FirstChild("textures");
-	num_textures = atoi(node.ToElement()->Attribute("num"));
+	num_textures = atoi(node.Element()->Attribute("num"));
 
 	if (num_textures > 0){
-		//--DCN: I am doing away with texture names.
-		//textureNames = new char*[num_textures];
 		textureObjs = new GXTexObj[num_textures];
 		std::string texture;
 
 		for (u16 i = 0; i < num_textures; i++){
-			//--DCN: It is my understanding that textureNames 
-			// are needed only for this:
-			
-			//*
-			// New:
-			TiXmlNode* texNode = model.FirstChild("textures").Child("name", i).ToElement();
+
+			TiXmlNode* texNode = model.FirstChild("textures").Child("name", i).Element();
 			texture = PATH_TEXTURES;	
 			texture += texNode->FirstChild()->Value();
-			//*/
-
-			/*
-			// Old:
-			TiXmlNode* texNode = node.Child("name", i).ToElement();
-
-			//TiXmlText* texName = texNode->ToText();
-
-			//std::string texValue = texNode->FirstChild()->Value();
-			unsigned strSize = strlen(texNode->FirstChild()->Value());
-			textureNames[i] = new char[strSize+1];
-			memcpy(textureNames[i], texNode->FirstChild()->Value(), strSize); 
-			//			
-			texture = PATH_TEXTURES;	
-			texture += textureNames[i];
-			//*/
 
 			// Load the texture!
 			loadTGATexture(texture.c_str(), textureObjs[i]);  
 		}
 	}
 
+	// Textures loaded, moving on to vertices.
 
 
-	TiXmlElement* verts = model.FirstChild("verts").ToElement();
+	TiXmlElement* verts = model.FirstChild("verts").Element();
 	TiXmlNode* vert = verts->FirstChild("vert");
 
 	num_verts = atoi(verts->Attribute("num"));
@@ -226,22 +188,22 @@ bool Model::loadModel(const char* modelName,  bool buildCollisionModel){
 		node = vert->FirstChild("pos");
 
 		// Read in the vertex data
-		vList[i].v[0] = float(atof(node.ToElement()->Attribute("x")));
-		vList[i].v[1] = float(atof(node.ToElement()->Attribute("y")));
-		vList[i].v[2] = float(atof(node.ToElement()->Attribute("z")));
+		vList[i].v[0] = float(atof(node.Element()->Attribute("x")));
+		vList[i].v[1] = float(atof(node.Element()->Attribute("y")));
+		vList[i].v[2] = float(atof(node.Element()->Attribute("z")));
 
 		node = vert->FirstChild("norm");
 
 		// Read in the normal data
-		vList[i].n[0] = float(atof(node.ToElement()->Attribute("x")));
-		vList[i].n[1] = float(atof(node.ToElement()->Attribute("y")));
-		vList[i].n[2] = float(atof(node.ToElement()->Attribute("z")));	
+		vList[i].n[0] = float(atof(node.Element()->Attribute("x")));
+		vList[i].n[1] = float(atof(node.Element()->Attribute("y")));
+		vList[i].n[2] = float(atof(node.Element()->Attribute("z")));	
 
 		// Move to the next one
 		vert = vert->NextSiblingElement("vert");
 	}
 	
-	TiXmlElement* faces = model.FirstChild("faces").ToElement();
+	TiXmlElement* faces = model.FirstChild("faces").Element();
 	TiXmlNode* face = faces->FirstChild("face");
 
 	num_faces = atoi(faces->Attribute("num"));
@@ -268,9 +230,9 @@ bool Model::loadModel(const char* modelName,  bool buildCollisionModel){
 			// Get the color info
 			node = vert->FirstChild("color");
 
-			fList[i].c[j3  ] = atoi(node.ToElement()->Attribute("r"));
-			fList[i].c[j3+1] = atoi(node.ToElement()->Attribute("g"));
-			fList[i].c[j3+2] = atoi(node.ToElement()->Attribute("b"));
+			fList[i].c[j3  ] = atoi(node.Element()->Attribute("r"));
+			fList[i].c[j3+1] = atoi(node.Element()->Attribute("g"));
+			fList[i].c[j3+2] = atoi(node.Element()->Attribute("b"));
 
 			// Move to the next one
 			vert = vert->NextSiblingElement("vert");
@@ -285,24 +247,24 @@ bool Model::loadModel(const char* modelName,  bool buildCollisionModel){
 		// Start with the u, then go to the v
 		node = uvParent->FirstChild("u");
 
-		fList[i].uv[0] = float(atof(node.ToElement()->Attribute("x")));
-		fList[i].uv[1] = float(atof(node.ToElement()->Attribute("y")));
-		fList[i].uv[2] = float(atof(node.ToElement()->Attribute("z")));	
+		fList[i].uv[0] = float(atof(node.Element()->Attribute("x")));
+		fList[i].uv[1] = float(atof(node.Element()->Attribute("y")));
+		fList[i].uv[2] = float(atof(node.Element()->Attribute("z")));	
 
 		// Can I do this?
-		node = uvParent->FirstChild("v")->ToElement();
+		//node = uvParent->FirstChild("v")->Element();
 		// Perhaps like this:
 		//node = node->NextSiblingElement("v");
 
-		fList[i].uv[3] = float(atof(node.ToElement()->Attribute("x")));
-		fList[i].uv[4] = float(atof(node.ToElement()->Attribute("y")));
-		fList[i].uv[5] = float(atof(node.ToElement()->Attribute("z")));			
+		fList[i].uv[3] = float(atof(node.Element()->Attribute("x")));
+		fList[i].uv[4] = float(atof(node.Element()->Attribute("y")));
+		fList[i].uv[5] = float(atof(node.Element()->Attribute("z")));			
 
 		// Move to the next one
 		face = face->NextSiblingElement("face");
 	}
 	
-	// All variables loaded in
+
 	// Build the display list with the variables gathered.
 	buildDisplayList();
 
@@ -400,7 +362,7 @@ void Model::buildDisplayList(){
 
 	GX_BeginDispList(tmpDisplayList, TEMP_SIZE);
 
-	// Render untextured faces
+	// Render the untextured faces
 	if (unTexFaces > 0){
 
 		//
@@ -428,7 +390,7 @@ void Model::buildDisplayList(){
 		GX_End();
 
 	}
-	//render textured faces
+	// Render the textured faces
 	if ((num_faces - unTexFaces) > 0){
 		j = unTexFaces;
 
@@ -736,16 +698,6 @@ void Model::render(Mtx modelview){
 
 	GX_CallDispList(displayList, actualDLsize);
 
-	/*
-	//glPushMatrix();
-	glRotatef(az, 0.0f, 0.0f, 1.0f);
-	glRotatef(ay, 0.0f, 1.0f, 0.0f);
-	glRotatef(ax, 1.0f, 0.0f, 0.0f);
-	glTranslatef(x,y,z);
-    
-	glCallList(displayList);
-	//glPopMatrix();
-	//*/
 }
 
 
