@@ -1166,7 +1166,7 @@ private:
 
 	@verbatim
 	TiXmlHandle docHandle( &document );
-	TiXmlElement* child2 = docHandle.FirstChild( "Document" ).FirstChild( "Element" ).Child( "Child", 1 ).ToElement();
+	TiXmlElement* child2 = docHandle.FirstChild( "Document" ).FirstChild( "Element" ).Child( "Child", 1 ).Element();
 	if ( child2 )
 	{
 		// do something useful
@@ -1185,7 +1185,7 @@ private:
 	int i=0; 
 	while ( true )
 	{
-		TiXmlElement* child = docHandle.FirstChild( "Document" ).FirstChild( "Element" ).Child( "Child", i ).ToElement();
+		TiXmlElement* child = docHandle.FirstChild( "Document" ).FirstChild( "Element" ).Child( "Child", i ).Element();
 		if ( !child )
 			break;
 		// do something
@@ -1198,7 +1198,7 @@ private:
 	to. Instead, prefer:
 
 	@verbatim
-	TiXmlElement* child = docHandle.FirstChild( "Document" ).FirstChild( "Element" ).FirstChild( "Child" ).ToElement();
+	TiXmlElement* child = docHandle.FirstChild( "Document" ).FirstChild( "Element" ).FirstChild( "Child" ).Element();
 
 	for( child; child; child=child->NextSiblingElement() )
 	{
@@ -1253,7 +1253,7 @@ public:
 	/// Return the handle as a TiXmlNode. This may return null.
 	TiXmlNode* Node() const			{ return node; } 
 	/// Return the handle as a TiXmlElement. This may return null.
-	TiXmlElement* ToElement() const	{ return ( ( node && node->ToElement() ) ? node->ToElement() : 0 ); }
+	TiXmlElement* Element() const	{ return ( ( node && node->ToElement() ) ? node->ToElement() : 0 ); }
 	/// Return the handle as a TiXmlText. This may return null.
 	TiXmlText* Text() const			{ return ( ( node && node->ToText() ) ? node->ToText() : 0 ); }
 

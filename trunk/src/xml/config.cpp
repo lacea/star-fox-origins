@@ -181,9 +181,9 @@ void loadConfigFile(const char *filename, configData *data){
         return;
     }
     TiXmlHandle docHandle(doc);
-    if(!docHandle.FirstChild("Config").ToElement() ||
+    if(!docHandle.FirstChild("Config").Element() ||
        //!docHandle.FirstChild("Config").FirstChild("Video").ToElement() ||
-       !docHandle.FirstChild("Config").FirstChild("Buttons").ToElement() || 
+       !docHandle.FirstChild("Config").FirstChild("Buttons").Element() || 
 	   /*
        !docHandle.FirstChild("Config").FirstChild("Video").FirstChild("Width").ToElement() ||
        !docHandle.FirstChild("Config").FirstChild("Video").FirstChild("Height").ToElement() ||
@@ -196,7 +196,7 @@ void loadConfigFile(const char *filename, configData *data){
        !docHandle.FirstChild("Config").FirstChild("Buttons").FirstChild("rightBtn").ToElement() ||
        !docHandle.FirstChild("Config").FirstChild("Buttons").FirstChild("leftBtn").ToElement() ||
 	   //*/
-       !docHandle.FirstChild("Config").FirstChild("Buttons").FirstChild("shotKey").ToElement() )
+       !docHandle.FirstChild("Config").FirstChild("Buttons").FirstChild("shotKey").Element() )
         DEFAULT_EXIT;
     /*
     if (!docHandle.FirstChild("Config").FirstChild("Video").FirstChild("Width").ToElement()->Attribute("value"))
@@ -228,20 +228,20 @@ void loadConfigFile(const char *filename, configData *data){
     data->leftBtn = atoi(docHandle.FirstChild("Config").FirstChild("Buttons").FirstChild("leftBtn").ToElement()->Attribute("value"));
     //*/
 
-	if (!docHandle.FirstChild("Config").FirstChild("Buttons").FirstChild("shotBtn").ToElement()->Attribute("value"))
+	if (!docHandle.FirstChild("Config").FirstChild("Buttons").FirstChild("shotBtn").Element()->Attribute("value"))
         DEFAULT_EXIT;
-    data->shotBtn = atoi(docHandle.FirstChild("Config").FirstChild("Buttons").FirstChild("shotBtn").ToElement()->Attribute("value"));
+    data->shotBtn = atoi(docHandle.FirstChild("Config").FirstChild("Buttons").FirstChild("shotBtn").Element()->Attribute("value"));
     
-	if (!docHandle.FirstChild("Config").FirstChild("Buttons").FirstChild("bombBtn").ToElement()->Attribute("value"))
+	if (!docHandle.FirstChild("Config").FirstChild("Buttons").FirstChild("bombBtn").Element()->Attribute("value"))
         DEFAULT_EXIT;
-    data->bombBtn = atoi(docHandle.FirstChild("Config").FirstChild("Buttons").FirstChild("bombBtn").ToElement()->Attribute("value"));
+    data->bombBtn = atoi(docHandle.FirstChild("Config").FirstChild("Buttons").FirstChild("bombBtn").Element()->Attribute("value"));
     
-	if (!docHandle.FirstChild("Config").FirstChild("Buttons").FirstChild("boostBtn").ToElement()->Attribute("value"))
+	if (!docHandle.FirstChild("Config").FirstChild("Buttons").FirstChild("boostBtn").Element()->Attribute("value"))
         DEFAULT_EXIT;
-    data->boostBtn = atoi(docHandle.FirstChild("Config").FirstChild("Buttons").FirstChild("boostBtn").ToElement()->Attribute("value"));
+    data->boostBtn = atoi(docHandle.FirstChild("Config").FirstChild("Buttons").FirstChild("boostBtn").Element()->Attribute("value"));
     
-	if (!docHandle.FirstChild("Config").FirstChild("Buttons").FirstChild("breakBtn").ToElement()->Attribute("value"))
+	if (!docHandle.FirstChild("Config").FirstChild("Buttons").FirstChild("breakBtn").Element()->Attribute("value"))
         DEFAULT_EXIT;
-    data->breakBtn = atoi(docHandle.FirstChild("Config").FirstChild("Buttons").FirstChild("breakBtn").ToElement()->Attribute("value"));
+    data->breakBtn = atoi(docHandle.FirstChild("Config").FirstChild("Buttons").FirstChild("breakBtn").Element()->Attribute("value"));
     
 }

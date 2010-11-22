@@ -18,10 +18,8 @@
 
 #include "StdInc.h"
 #include "log_console.h"
-
 #include "baseObject.h"
 #include "gameState.h"
-
 #include "camera.h"
 #include "paths.h"
 #include "font.h"
@@ -94,7 +92,7 @@ int main(){
 	//atexit(newExit);
 
 	// Initialize the console
-	log_console_init(rmode, 0, 20, 30, rmode->fbWidth - 100, rmode->xfbHeight - 160);
+	log_console_init(rmode, 0, 20, 30, rmode->fbWidth - 200, rmode->xfbHeight - 160);
 	log_console_enable_video(true);
 
 
@@ -160,8 +158,7 @@ int main(){
 
 		// Render
 		gameState->Render();
-exit(0);
-
+//exit(0);
 		// Done rendering
 		GX_DrawDone();
         currfb ^= 1;
