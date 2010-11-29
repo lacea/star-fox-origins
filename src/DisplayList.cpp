@@ -40,13 +40,13 @@
 DisplayList::DisplayList(): 
 		_size(TEMP_DL_SIZE){
 	
-#ifdef DIFFERENT_ALLOC
-	_list = (u8*)(memalign(32, TEMP_DL_SIZE));
-#else
-	_list = new u8[TEMP_DL_SIZE/sizeof(u8)];
-#endif	
+	_list = (u8*)(memalign(32, _size));
+
 	// Get the list primed for GX_BeginDispList
-	DCInvalidateRange((void*)_list, TEMP_DL_SIZE);
+	DCInvalidateRange((void*)_list, _size);
+
+	// Set it all to 0
+	memset(_list, 0, _size);
  
 }
 
@@ -63,11 +63,8 @@ DisplayList::DisplayList():
 DisplayList::DisplayList(const DisplayList* dl, u32 newSize):
 		_size((newSize + 31)&~31){    // Display lists need to be at least 32 bytes more than needed
 
-#ifdef DIFFERENT_ALLOC
 	_list = (u8*)(memalign(32, _size));
-#else
-	_list = new u8[_size/sizeof(u8)];
-#endif	
+
 	DCInvalidateRange((void*)_list, _size);
     memcpy(_list, dl->list(), _size);
     DCFlushRange((void*)_list, _size);
@@ -82,14 +79,9 @@ DisplayList::DisplayList(const DisplayList* dl, u32 newSize):
 //----------------------------------------
 
 DisplayList::~DisplayList(){
-
-#ifdef DIFFERENT_ALLOC
 	if(_list)
 		free(_list);
-#else
-	delete[] _list;
-#endif	
-
+	_list = NULL;
 }
 
 //----------------------------------------

@@ -99,12 +99,9 @@ Model::~Model(){
 	delete[] textureObjs;
 	textureObjs = NULL;
 
-#ifdef DIFFERENT_ALLOC
 	if(displayList)
 		free(displayList);
-#else
-	delete[] displayList;
-#endif
+
 	displayList = NULL;
 
 }
@@ -286,6 +283,10 @@ bool Model::loadModel(const char* modelName,  bool buildCollisionModel){
 		collisionModel->finalize();
 	}
 
+	// Clean up
+	doc->Clear();
+	delete doc;
+		
 	return true;
 }
 
@@ -337,8 +338,6 @@ void Model::buildDisplayList(){
 
 	static const u32 TEMP_SIZE = 16384;
 
-#ifdef DIFFERENT_ALLOC
-
 	if(displayList)
 		free(displayList);
 	displayList = NULL;
@@ -350,24 +349,27 @@ void Model::buildDisplayList(){
 		exit(1);
 	}
 
-#else
+	memset(tmpDisplayList, 0, TEMP_SIZE);
 
-	delete[] displayList;
-	displayList = NULL;
-
-	u8* tmpDisplayList = new u8[TEMP_SIZE/sizeof(u8)];
-#endif
 
 	DCInvalidateRange((void*)tmpDisplayList, TEMP_SIZE);
 
 	GX_BeginDispList(tmpDisplayList, TEMP_SIZE);
 
+	//--DCN: Might need to get rid of this one entirely,
+	// or something else, because I'm not sure we're allowed
+	// to do a "clearVtxDesc()" and such inside a display list.
 	// Render the untextured faces
 	if (unTexFaces > 0){
 
 		//
 		GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORDNULL, GX_TEXMAP_NULL, GX_COLOR0A0);
 		//
+		GX_ClearVtxDesc();
+		GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
+		GX_SetVtxDesc(GX_VA_CLR0, GX_DIRECT);
+
+
 		GX_Begin(GX_TRIANGLES, GX_VTXFMT_CLR, 3*unTexFaces);
 			for (i = 0; i < unTexFaces; i++){
 
@@ -379,12 +381,12 @@ void Model::buildDisplayList(){
 				GX_Position3f32(vList[fList[i].v[1]].v[0],
 								vList[fList[i].v[1]].v[1],
 								vList[fList[i].v[1]].v[2]);
-				GX_Color4u8( fList[i].c[3], fList[i].c[4], fList[i].c[5], 0xff);
+				GX_Color4u8(fList[i].c[3], fList[i].c[4], fList[i].c[5], 0xff);
 
 				GX_Position3f32(vList[fList[i].v[2]].v[0],
 								vList[fList[i].v[2]].v[1],
 								vList[fList[i].v[2]].v[2]);
-				GX_Color4u8( fList[i].c[6], fList[i].c[7], fList[i].c[8], 0xff);
+				GX_Color4u8(fList[i].c[6], fList[i].c[7], fList[i].c[8], 0xff);
 			}
 
 		GX_End();
@@ -398,11 +400,15 @@ void Model::buildDisplayList(){
 		GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
 		//
 
+		GX_ClearVtxDesc();
+		GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
+		GX_SetVtxDesc(GX_VA_NRM, GX_DIRECT);
+		GX_SetVtxDesc(GX_VA_CLR0, GX_DIRECT);
+		GX_SetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+
 		for (i = 0; i< num_textures; ++i){
 
 			GX_LoadTexObj(&textureObjs[i], GX_TEXMAP0);
-			//glBindTexture(GL_TEXTURE_2D, textureIds[i]);
-
 
 			while((fList[j].tIndex-1) == i && j < num_faces){
 
@@ -447,23 +453,21 @@ void Model::buildDisplayList(){
 
 	// Copy the temporary DL into our permanent display list
 
-	//*	
-	//My original:	
-	
+
 	// Possibly this is making it copy too much?
+	//actualDLsize = (GX_EndDispList()+63)&~63;
 	actualDLsize = (GX_EndDispList()+31)&~31;
 	//actualDLsize = GX_EndDispList();
 
-#ifdef DIFFERENT_ALLOC
 	displayList = (u8*)(memalign(32, actualDLsize));
-#else	
-	displayList = new u8[actualDLsize / sizeof(u8)]; 
-#endif
+
+	// Set it all to 0
+	//memset(displayList, 0, actualDLsize);
+	DCInvalidateRange((void*)displayList, actualDLsize);
 
 	memcpy(displayList, tmpDisplayList, actualDLsize);
 	DCFlushRange((void*)displayList, actualDLsize);
 
-	//*/
 	/*
 	// Possibly the way to go? [I don't think so...]
 	actualDLsize = GX_EndDispList();
@@ -481,13 +485,9 @@ void Model::buildDisplayList(){
 
 	//*/
 
-#ifdef DIFFERENT_ALLOC
 	if(tmpDisplayList)
 		free(tmpDisplayList);
 	tmpDisplayList = NULL;
-#else	
-	delete[] tmpDisplayList;
-#endif
 
 }
 
@@ -664,7 +664,8 @@ void Model::loadTGATexture(const char *fileName, GXTexObj& textureObj){
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	
 	//*/
-	delete [] imageData;
+	delete[] imageData;
+	imageData = NULL;
 }
 
 //----------------------------------------
@@ -680,19 +681,40 @@ void Model::loadTGATexture(const char *fileName, GXTexObj& textureObj){
 //
 //----------------------------------------
 
-void Model::render(Mtx modelview){
+void Model::render(){
+//void Model::render(Mtx modelview){
 
-	Mtx rot;
+	/*
+	Mtx modelview;
+
+	// Rotate
+	guMtxIdentity(modelview);
+	guMtxRotDeg(modelview, 'x', az);
+	guMtxRotDeg(modelview, 'y', ay);
+	guMtxRotDeg(modelview, 'z', az);
+	//guMtxConcat(modelview, rot, modelview);
+
+	//Translate
+	// Maybe this needs to be 
+	guMtxTrans(modelview, x, y, z);
+	//guMtxTransApply(modelview, modelview, x, y, z);
+	//*/
+	//*
+	Mtx rot, modelview;
 
 	// Rotate
 	guMtxIdentity(rot);
 	guMtxRotDeg(rot, 'x', az);
 	guMtxRotDeg(rot, 'y', ay);
 	guMtxRotDeg(rot, 'z', az);
-	guMtxConcat(modelview, rot, modelview);
-
+	
 	//Translate
-	guMtxTransApply(modelview, modelview, x, y, z);
+	guMtxIdentity(modelview);
+	// Maybe this needs to be 
+	//guMtxTrans(modelview, x, y, z);
+	guMtxTransApply(modelview, modelview, x, y, z);	
+	guMtxConcat(modelview, rot, modelview);
+	//*/
 
 	GX_LoadPosMtxImm(modelview, GX_PNMTX0);
 

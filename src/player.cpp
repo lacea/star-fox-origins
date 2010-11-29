@@ -73,10 +73,9 @@ void Player::move(float sfactor){
 	// y: roll
 	// z: yaw
 
-	ax = orient.pitch;
-	ay = orient.roll;
+	ax = orient.roll;
+	ay = orient.pitch;
 	az = orient.yaw;
-
 
 	dy = ax * (MAX_Y_SPEED/MAX_X_ROT);
 	dx = -ay * MAX_X_SPEED;

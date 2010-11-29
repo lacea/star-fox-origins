@@ -22,9 +22,7 @@
 #include "StdInc.h"
 #include <cstdarg>
 
-#ifdef DIFFERENT_ALLOC
 #include <malloc.h>
-#endif
 
 /*
 class Font{

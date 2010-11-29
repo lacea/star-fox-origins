@@ -222,20 +222,19 @@ void InitFontSystem(){		// Build our font display list
         cx = float(j%16)/16.0f;        // X position of current character
         cy = float(j/16)/16.0f;        // Y position of current character
 
-#ifdef DIFFERENT_ALLOC
-
 		if(fontList[j])
 			free(fontList[j]);
 
 		u8* tmpDisplayList = (u8*)(memalign(32, TEMP_SIZE));
-#else
-		delete[] fontList[j];	
-		u8* tmpDisplayList = new u8[TEMP_SIZE/sizeof(u8)];
-#endif
+
 
 		GX_BeginDispList(tmpDisplayList, TEMP_SIZE);
 
 		GX_Begin(GX_QUADS, GX_VTXFMT_TEX, 4);
+
+		GX_ClearVtxDesc();
+		GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
+		GX_SetVtxDesc(GX_VA_TEX0, GX_DIRECT);
 
 #ifdef TODO_FONT
 		// I made up values for z! The original was glTexCoord2f
@@ -253,22 +252,13 @@ void InitFontSystem(){		// Build our font display list
 
 		actualFontDLsize = (GX_EndDispList()+31)&~31;
 
-#ifdef DIFFERENT_ALLOC
 		fontList[j] = (u8*)(memalign(32, actualFontDLsize));
-#else	
-		fontList[j] = new u8[actualFontDLsize / sizeof(u8)]; 
-#endif
 
 		memcpy(fontList[j], tmpDisplayList, actualFontDLsize);
 		DCFlushRange((void*)fontList[j], actualFontDLsize);
 
-
-#ifdef DIFFERENT_ALLOC
 		if(tmpDisplayList)
 			free(tmpDisplayList);
-#else	
-		delete[] tmpDisplayList;
-#endif
 
     }
 }
@@ -277,6 +267,7 @@ void KillFontSystem(){
 	int f = 255;
 	do{
 		delete fontList[f];
+		--f;
 	}while(f >= 0);
 
 
@@ -303,7 +294,7 @@ void PrintText(int set, s32 x, s32 y, f32 scalex, f32 scaley, char *fmt, ...){
     
 
 	Mtx modelview;
-	guMtxTrans(modelview, x, y, 0);
+	guMtxTransApply(modelview, modelview, x, y, 0);
 	guMtxScale(modelview, scalex, scaley, 1.0f);
 
     //glListBase(list-32+(128*set));   //?????
@@ -318,7 +309,7 @@ void PrintText(int set, s32 x, s32 y, f32 scalex, f32 scaley, char *fmt, ...){
 		u8 ascii = text[i];
 
 		// Move it for each letter
-		guMtxTrans(modelview, 1, 0, 0);
+		guMtxTransApply(modelview, modelview, 1, 0, 0);
 
 		GX_CallDispList(fontList[ascii], actualFontDLsize);
 	}

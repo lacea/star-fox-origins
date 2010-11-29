@@ -42,10 +42,8 @@
 
 #include "xml/tinyxml/tinyxml.h"
 
-
-#ifdef DIFFERENT_ALLOC
 #include <malloc.h>
-#endif
+
 
 // The maximum size in characters that the name can be.
 #define MAX_MODEL_NAME_LENGTH 24
@@ -81,17 +79,18 @@ public:
 	//u32 getTextureId(int texture);
 	//void setTextureId(u32 textureId, int texture);
 	void deleteTexture(int texture);
-	void render(Mtx modelview);
+	void render();
+	//void render(Mtx modelview);
 	int getNumberOfVertices(){return num_verts;};
 	int getNumberOfFaces(){return num_faces;};
 	int getNumberOfTextureIds(){return num_textures;};
 	const char * getName(){return name;};
 	//const char * getFileName(){return filename;};
 	//char **getTextureNames(){return textureNames;};
-	CollisionModel3DImpl* collisionModel;
-
+	bool loadModel(const char* fileName, bool buildCollisionModel = false);
 	
-	bool loadModel(const char * fileName, bool buildCollisionModel = false);
+	
+	CollisionModel3DImpl* collisionModel;
 	
 private:
 
