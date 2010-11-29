@@ -136,6 +136,12 @@ void Billboard::render(){
 	GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
 	//
 
+	GX_ClearVtxDesc();
+	GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
+	GX_SetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+	GX_SetVtxDesc(GX_VA_CLR0, GX_DIRECT);
+	
+
 	if(animated){
         int currentFrame = int(frame);
         if(currentFrame >= numFrames)
@@ -157,6 +163,7 @@ void Billboard::render(){
 		GX_End();
 		
     }else{
+
 		GX_Begin(GX_QUADS, GX_VTXFMT_TEX_CLR, 4);
 			GX_Position3f32(vertices[0].x, vertices[0].y, vertices[0].z);
 			GX_TexCoord2f32(0.0f, 1.0f);

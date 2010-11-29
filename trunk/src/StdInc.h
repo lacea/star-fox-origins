@@ -35,11 +35,7 @@
 #include "paths.h"
 
 // We want a different way to allocate our display lists
-#define DIFFERENT_ALLOC
-
-
-
-// We set up several vertex formats ahead of time:
+//#define DIFFERENT_ALLOC
 
 // Texture, normal, color 
 #define GX_VTXFMT_TEX_NRM_CLR	GX_VTXFMT0
@@ -51,7 +47,6 @@
 #define GX_VTXFMT_TEX_NRM		GX_VTXFMT3 
 // Texture and Color
 #define GX_VTXFMT_TEX_CLR		GX_VTXFMT4 
-
 
 
 

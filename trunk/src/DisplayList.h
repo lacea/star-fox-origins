@@ -64,10 +64,7 @@
 #define __SF_DISPLAYLIST__
 
 #include "StdInc.h"
-
-#ifdef DIFFERENT_ALLOC
 #include <malloc.h>
-#endif
 
 using std::memcpy;
 ///////////////////////////////

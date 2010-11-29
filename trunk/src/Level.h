@@ -74,7 +74,7 @@ public:
 	float updateSpeedFactor();
 
 	// Load in the file with our level objects
-	void loadLevelFile(string xmlFile);
+	bool loadLevelFile(string xmlFile);
 
 	bool init(u32 level);
 

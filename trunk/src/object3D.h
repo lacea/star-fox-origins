@@ -25,15 +25,15 @@
 class Object3D : public BaseObject{
 
 public:
-    float ax,ay,az;		// Angle rotation
-    float dx,dy,dz;		// Delta aceleration
-    float health;		// Health
-    Model* model;		// 3D model
-    
-    Object3D();
-    Object3D(float x, float y, float z);
-    Object3D(Model* mdl);
-    Object3D(Model* mdl, float x, float y, float z);
+	float ax,ay,az;		// Angle rotation
+	float dx,dy,dz;		// Delta aceleration
+	float health;		// Health
+	Model* model;		// 3D model
+
+	Object3D();
+	//Object3D(float x, float y, float z);
+	Object3D(Model* mdl);
+	//Object3D(Model* mdl, float x, float y, float z);
 };
 
 #endif

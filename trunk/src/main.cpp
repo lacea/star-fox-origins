@@ -31,15 +31,25 @@
 #include "Level.h"
 
 
+// ----------------------------------- //
+// -- Take out for finished project -- //
+
+//#define FINISHED_PROJECT
+#ifndef FINISHED_PROJECT
+	static volatile char buffer[1024*1024*2];
+#endif
+// ----------------------------------- //
+
+
 //----------------------//
 //   Global variables   //
 //----------------------//
 
-GameState *gameState;
-
 // Current level
 u32 curLevel = 1;
 
+// This is our current gamestate (replace with something dynamic)
+Level* gameState;
 
 //----------------------//
 // Wii setup variables  //
@@ -51,19 +61,9 @@ GXRModeObj *rmode = NULL;
 Mtx44 projection;
 Mtx modelview;
 u32 *xfb[2];			// Double framebuffer
-u8 currfb;				// Current framebuffer (0 or 1)
+s32 currfb;				// Current framebuffer (0 or 1)
 static u8 gp_fifo[DEFAULT_FIFO_SIZE] __attribute__((aligned(32)));
 
-
-
-// ----------------------------------- //
-// -- Take out for finished project -- //
-
-//#define FINISHED_PROJECT
-#ifndef FINISHED_PROJECT
-	static volatile char buffer[1024*1024*2];
-#endif
-// ----------------------------------- //
 
 //////////////////////////////////////////////////////////////
 //					  Function Prototypes					//
@@ -72,7 +72,7 @@ static u8 gp_fifo[DEFAULT_FIFO_SIZE] __attribute__((aligned(32)));
 int main();
 static void init();
 static void quit_game(int code);
-void newExit (void);
+void newExit(void);
 
 //////////////////////////////////////////////////////////////
 //							 MAIN							//
@@ -92,27 +92,14 @@ int main(){
 	//atexit(newExit);
 
 	// Initialize the console
-	log_console_init(rmode, 0, 20, 30, rmode->fbWidth - 200, rmode->xfbHeight - 160);
+	log_console_init(rmode, 0, 30, 30, rmode->fbWidth - 200, rmode->xfbHeight - 60);
 	log_console_enable_video(true);
 
 
-	// GUH?!
-	{
-		static u32 time = 0;
-
-		while(time < 100)	{
-			time++;
-			printf(".");			
-		}
-		//exit(0);
-	}
-
-
-	// Create a new gamestate
-    //gameState = new GameState();
+	printf("Booting up.\n");			
 	
-	// This is our current gamestate (replace with something dynamic)
-	Level* gameState = new Level();
+	// Create a new gamestate
+    gameState = new Level();
 
 	// Have to make sure we can read the SD card before we use it!
 	fatUnmount("sd:/");
@@ -123,32 +110,30 @@ int main(){
     InitFontSystem();
 	LoadFont(PATH_FONT"font.tga", gameState->font);
 
-
-	//*
+	// Change the button configuration
     gameState->btns->change(CHANGE_BTN_SHOT, config.shotBtn);
 	gameState->btns->change(CHANGE_BTN_BOMB, config.bombBtn);
 	gameState->btns->change(CHANGE_BTN_BOOST, config.boostBtn);
 	gameState->btns->change(CHANGE_BTN_BREAK, config.breakBtn);
-	//*/
-
 	
+	// Initialize our gamestate
 	if (!gameState->init(curLevel))
         quit_game(1);
 
-
-
-	//log_console_enable_video(false);
+	// Set the console to invisible
+	log_console_enable_video(false);
 
 
 	// Go through the main loop
-    bool quit = false;
+    bool playing = true;
 
-    while (!quit) {
+	while (playing) {
 
 		WPAD_ScanPads();
 
 		// Do we want to quit?
-		if(WPAD_ButtonsDown(WPAD_CHAN_0) & WPAD_BUTTON_HOME) quit = true;
+		if(WPAD_ButtonsDown(WPAD_CHAN_0) & WPAD_BUTTON_HOME) 
+			playing = false;
 
 		// Process Input
 		gameState->Input();
@@ -158,19 +143,22 @@ int main(){
 
 		// Render
 		gameState->Render();
-//exit(0);
+
 		// Done rendering
 		GX_DrawDone();
-        currfb ^= 1;
-        GX_CopyDisp(xfb[currfb],GX_TRUE);
-        VIDEO_SetNextFramebuffer(xfb[currfb]);
-        VIDEO_Flush();
+		currfb ^= 1;
+		GX_CopyDisp(xfb[currfb],GX_TRUE);
+		VIDEO_SetNextFramebuffer(xfb[currfb]);
+		VIDEO_Flush();
+		VIDEO_WaitVSync();
+		
+	}
 
-    }
 
+	log_console_enable_video(true);
 	// TODO: We should SAVE the game here.
-
-
+	fprintf(stderr, "\nFinished");
+	
 	//Quit the game
     quit_game(0);
 
@@ -264,6 +252,8 @@ static void init(){
 	GX_SetNumChans(1);
 	GX_SetNumTexGens(1);
 
+	// Set the width of any lines that we draw
+	GX_SetLineWidth(4, GX_TO_EIGHTH);
 
 	GX_SetTevOp(GX_TEVSTAGE0, GX_MODULATE);
 	GX_SetTexCoordGen(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY);
@@ -283,32 +273,28 @@ static void init(){
 	GX_InvVtxCache();
 	GX_ClearVtxDesc();
 	GX_InvalidateTexAll();
-
 	
 	GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
 	GX_SetVtxDesc(GX_VA_NRM, GX_DIRECT);
 	GX_SetVtxDesc(GX_VA_CLR0, GX_DIRECT);
 	GX_SetVtxDesc(GX_VA_TEX0, GX_DIRECT);
 
-
-	//--DCN: Is this possible?!
-	// Or do I need to do: GX_GetVtxDescv and GX_SetVtxDescv ????
-
+	// Texture, normal, and color
 	GX_SetVtxAttrFmt(GX_VTXFMT_TEX_NRM_CLR, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
 	GX_SetVtxAttrFmt(GX_VTXFMT_TEX_NRM_CLR, GX_VA_NRM, GX_NRM_XYZ, GX_F32, 0);
 	GX_SetVtxAttrFmt(GX_VTXFMT_TEX_NRM_CLR, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
 	GX_SetVtxAttrFmt(GX_VTXFMT_TEX_NRM_CLR, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
-	//
+	// Color only
 	GX_SetVtxAttrFmt(GX_VTXFMT_CLR, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
 	GX_SetVtxAttrFmt(GX_VTXFMT_CLR, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
-	//
+	// Texture only
 	GX_SetVtxAttrFmt(GX_VTXFMT_TEX, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
 	GX_SetVtxAttrFmt(GX_VTXFMT_TEX, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
-	//
+	// Texture and normal
 	GX_SetVtxAttrFmt(GX_VTXFMT_TEX_NRM, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
 	GX_SetVtxAttrFmt(GX_VTXFMT_TEX_NRM, GX_VA_NRM, GX_NRM_XYZ, GX_F32, 0);
 	GX_SetVtxAttrFmt(GX_VTXFMT_TEX_NRM, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
-	//
+	// Texture and color
 	GX_SetVtxAttrFmt(GX_VTXFMT_TEX_CLR, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
 	GX_SetVtxAttrFmt(GX_VTXFMT_TEX_CLR, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
 	GX_SetVtxAttrFmt(GX_VTXFMT_TEX_CLR, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
@@ -316,6 +302,11 @@ static void init(){
 
 
 	GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
+
+	//Extra, to see what happens.
+	//--DCN: TAKE IT OUT!
+	GX_SetCullMode(GX_CULL_NONE);
+
 
 }
 

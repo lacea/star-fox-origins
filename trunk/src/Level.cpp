@@ -203,16 +203,16 @@ bool explosionCallback(Billboard * bill, Level* lvl, float speedFactor){
 // @pre     The file must exist on the SD card and be properly formatted!
 // @post    The level has been loaded and is ready to go.
 // @param   xmlFile: The file to load
-// @return  -
+// @return  bool: true if successful, false if not
 //
 //----------------------------------------
 
-void Level::loadLevelFile(string xmlFile){
+bool Level::loadLevelFile(string xmlFile){
 	
 	TiXmlDocument *doc = new TiXmlDocument(xmlFile.c_str());
 	if (!doc->LoadFile()){
 		fprintf(stderr, "Can't open xml level\n");
-		return;
+		return false;
 	}
 	
 	TiXmlHandle docHandle(doc);
@@ -222,12 +222,11 @@ void Level::loadLevelFile(string xmlFile){
 		fprintf(stderr, "No models in the level\n");
 		doc->Clear();
 		delete doc;
-		return;
+		return false;
 	}
 	
 	Object3D *tempObject = NULL;
 
-	//*
 	TiXmlNode* object = objects.FirstChild("object").Element();
 	for(; object; object = object->NextSibling()){ 
 		
@@ -246,7 +245,7 @@ void Level::loadLevelFile(string xmlFile){
 			tempObject->pos.x = atof(attr->Attribute("x"));
 			tempObject->pos.y = atof(attr->Attribute("y"));
 			tempObject->pos.z = atof(attr->Attribute("z"));
-			
+
 			attr = object->FirstChild("rotation")->ToElement();
 
 			if(attr){
@@ -264,7 +263,12 @@ void Level::loadLevelFile(string xmlFile){
 
 		}
 	}
-	//*/
+
+	// Clean up
+	doc->Clear();
+	delete doc;
+
+	return true;
 }
 
 //----------------------------------------
@@ -498,9 +502,9 @@ void Level::clear(){
 //-----------------------------------------------------------------------------
 
 void Level::renderPlayer(Mtx view){
-	//--DCN: I guess we're not using the view matrix (set by the calling function "render()"
+	//--DCN: I guess we're not using the view matrix (set by the calling function "render()")
 
-
+	/*
 	// I think this is rotating and translating TWICE! Oh no!
 	// It's done in state->player->model->render(mv); as well. Maybe I can take it out?!
 	Mtx mv, rot;
@@ -515,9 +519,10 @@ void Level::renderPlayer(Mtx view){
 	guMtxRotDeg(rot, 'z', player->az);
 
 	guMtxConcat(mv, rot, mv);
-
-	// ENABLE FOG
 	player->model->render(mv);
+	//*/
+	// ENABLE FOG
+	player->model->render();
 	// DISABLE FOG
 
 	/*
@@ -595,7 +600,7 @@ void Level::renderAsteroids(Mtx view){
 		//glLoadIdentity( );
 		if(tempObject->pos.z<(camera->pos.z) && tempObject->pos.z>(camera->pos.z-500)){
 
-
+			/*
 			Mtx mv, rot;
 			//--DCN: Maybe this?
 			//guMtxCopy(view, mv);
@@ -608,8 +613,9 @@ void Level::renderAsteroids(Mtx view){
 			guMtxRotDeg(rot, 'z', tempObject->az);
 
 			guMtxConcat(mv, rot, mv);
-
 			tempObject->model->render(mv);
+			//*/
+			tempObject->model->render();
 
 			/*
 			glPushMatrix();
@@ -646,7 +652,7 @@ void Level::renderShots(Mtx view){
 	while(iterator != playerShotList->end()){
 		temp = static_cast<PlayerShot *>(*iterator);
 
-		
+		/*
 		Mtx mv, rot;
 		//--DCN: Maybe this?
 		//guMtxCopy(view, mv);
@@ -659,8 +665,10 @@ void Level::renderShots(Mtx view){
 		guMtxRotDeg(rot, 'z', temp->az);
 
 		guMtxConcat(mv, rot, mv);
-
 		temp->model->render(mv);
+		//*/
+
+		temp->model->render();
 
 		/*
 		glPushMatrix();
@@ -694,9 +702,6 @@ void Level::renderShots(Mtx view){
 //----------------------------------------
 
 void Level::Render(){
-	float fps = FPS();
-    
-	// Change the camera stuff
 
 	//--DCN: I dislike multiplying by random numbers
 
@@ -707,7 +712,6 @@ void Level::Render(){
 	camera->up.x = cos(((player->ay*0.2f*M_PI)/180.0f)+M_PI/2);
 	camera->up.y = sin(((player->ay*0.2f*M_PI)/180.0f)+M_PI/2);
 
-	//Inside "state->camera->update()"
 	///////////////////////////////////////////
 	// This is going to be a lot more efficient when we change everything to guVectors:
 	Mtx view;
@@ -716,8 +720,7 @@ void Level::Render(){
 	guVector up = {camera->up.x, camera->up.y, camera->up.z};
 	
 	guLookAt(view, &pos, &up, &look);
-
-	//state->camera->update();
+	GX_LoadPosMtxImm(view, GX_PNMTX0);	
 	///////////////////////////////////////////
 
 	//--DCN: You know what would be CRAZY?!?!
@@ -735,8 +738,13 @@ void Level::Render(){
 
 	// Translate
 	guMtxIdentity(modelview);
-	guMtxTrans(modelview, player->pos.x, player->pos.y, player->pos.z);
+	//guMtxTransApply(modelview, modelview, player->pos.x, player->pos.y, player->pos.z);
 
+	//--DCN: For some reason, the z value is a REDICULOUSLY huge number
+	guMtxTransApply(modelview, modelview, player->pos.x/2, player->pos.y/2, - 20);
+
+	
+	//fprintf(stderr, "[Pos] x: %f, y: %f, z: %f\n", player->pos.x, player->pos.y, player->pos.z);
 	// Rotate
 	guMtxIdentity(rot);
 
@@ -750,46 +758,98 @@ void Level::Render(){
 	// Load the modelview matrix to be our position matrix
 	GX_LoadPosMtxImm(modelview, GX_PNMTX0);
 	
-	
-	GX_Begin(GX_QUADS, GX_VTXFMT_CLR, 4);
+	GX_ClearVtxDesc();
+	GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
+	GX_SetVtxDesc(GX_VA_CLR0, GX_DIRECT);
+
+	GX_Begin(GX_LINES, GX_VTXFMT_CLR, 2);
 		GX_Position3f32(0, 0, 0);
 		GX_Color4u8(0xff, 0xff, 0xff, 0xff);
 		GX_Position3f32(0, 0, -1000);
 		GX_Color4u8(0xff, 0xff, 0xff, 0xff);
 	GX_End();
-	//-------------------------
 
+	//////////////////////
+	// TESTING
+	//////////////////////
+	//*
+	// Why does this come out GREEN!?!?!
+		u8 r = 0x00;
+		u8 g = 0x00;
+		u8 b = 0xFF;
 
-	/*
-	glDisable(GL_TEXTURE_2D);
-	glDisable(GL_LIGHTING);
-	glColor4f(1.0f, 1.0f, 1.0f, 0.0f);
-    
-	glPushMatrix();
-	glTranslatef( state->player->pos.x, state->player->pos.y, state->player->pos.z );
-	glRotatef( state->player->ax, 1.0f, 0.0f, 0.0f );
-	glRotatef( state->player->ay, 0.0f, 1.0f, 0.0f );
-	glRotatef( state->player->az, 0.0f, 0.0f, 1.0f );
-	glBegin(GL_LINES);
-	glVertex3f(0,0,0);
-	glVertex3f(0,0,-1000);
-	glEnd();
-	glPopMatrix();
-	
-	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, state->font);    
-	glEnable(GL_BLEND);
+		//guMtxIdentity(modelview);
+		//guMtxTransApply(modelview, modelview, 0.0f,0.0f,-7.0f);
+		//GX_LoadPosMtxImm(modelview, GX_PNMTX0);
+
+		GX_Begin(GX_QUADS, GX_VTXFMT_CLR, 24);		
+
+			GX_Position3f32(-1.0f,1.0f,1.0f);	// Top Left of the quad (top)
+			GX_Color4u8(r, g, b, 0xff);
+			GX_Position3f32(1.0f,1.0f,1.0f);	// Top Right of the quad (top)
+			GX_Color4u8(r, g, b, 0xff);
+			GX_Position3f32(1.0f,1.0f,-1.0f);	// Bottom Right of the quad (top)
+			GX_Color4u8(r, g, b, 0xff);
+			GX_Position3f32(-1.0f,1.0f,-1.0f);	// Bottom Left of the quad (top)
+			GX_Color4u8(r, g, b, 0xff);
+
+			GX_Position3f32(-1.0f,-1.0f,1.0f);	// Top Left of the quad (bottom)
+			GX_Color4u8(r, g, b, 0xff);
+			GX_Position3f32(1.0f,-1.0f,1.0f);	// Top Right of the quad (bottom)
+			GX_Color4u8(r, g, b, 0xff);
+			GX_Position3f32(1.0f,-1.0f,-1.0f);	// Bottom Right of the quad (bottom)
+			GX_Color4u8(r, g, b, 0xff);
+			GX_Position3f32(-1.0f,-1.0f,-1.0f);	// Bottom Left of the quad (bottom)
+			GX_Color4u8(r, g, b, 0xff);
+
+			GX_Position3f32(-1.0f,1.0f,1.0f);	// Top Left of the quad (front)
+			GX_Color4u8(r, g, b, 0xff);
+			GX_Position3f32(-1.0f,-1.0f,1.0f);	// Top Right of the quad (front)
+			GX_Color4u8(r, g, b, 0xff);
+			GX_Position3f32(1.0f,-1.0f,1.0f);	// Bottom Right of the quad (front)
+			GX_Color4u8(r, g, b, 0xff);
+			GX_Position3f32(1.0f,1.0f,1.0f);	// Bottom Left of the quad (front)
+			GX_Color4u8(r, g, b, 0xff);
+
+			GX_Position3f32(-1.0f,1.0f,-1.0f);	// Top Left of the quad (back)
+			GX_Color4u8(r, g, b, 0xff);
+			GX_Position3f32(-1.0f,-1.0f,-1.0f);	// Top Right of the quad (back)
+			GX_Color4u8(r, g, b, 0xff);
+			GX_Position3f32(1.0f,-1.0f,-1.0f);	// Bottom Right of the quad (back)
+			GX_Color4u8(r, g, b, 0xff);
+			GX_Position3f32(1.0f,1.0f,-1.0f);	// Bottom Left of the quad (back)
+			GX_Color4u8(r, g, b, 0xff);
+
+			GX_Position3f32(-1.0f,1.0f,1.0f);	// Top Left of the quad (left)
+			GX_Color4u8(r, g, b, 0xff);
+			GX_Position3f32(-1.0f,1.0f,-1.0f);	// Top Right of the quad (back)
+			GX_Color4u8(r, g, b, 0xff);
+			GX_Position3f32(-1.0f,-1.0f,-1.0f);	// Bottom Right of the quad (back)
+			GX_Color4u8(r, g, b, 0xff);
+			GX_Position3f32(-1.0f,-1.0f,1.0f);	// Bottom Left of the quad (back)
+			GX_Color4u8(r, g, b, 0xff);
+
+			GX_Position3f32(1.0f,1.0f,1.0f);	// Top Left of the quad (right)
+			GX_Color4u8(r, g, b, 0xff);
+			GX_Position3f32(1.0f,1.0f,-1.0f);	// Top Right of the quad (right)
+			GX_Color4u8(r, g, b, 0xff);
+			GX_Position3f32(1.0f,-1.0f,-1.0f);	// Bottom Right of the quad (right)
+			GX_Color4u8(r, g, b, 0xff);
+			GX_Position3f32(1.0f,-1.0f,1.0f);	// Bottom Left of the quad (right)
+			GX_Color4u8(r, g, b, 0xff);
+
+		GX_End();
 	//*/
-
-
+	//-------------------------
 
 	// This is what will become our communications 
 	// i.e. "All ships report in!"
-
+	/*
 	Mtx44 projection;
 	guOrtho(projection,0,rmode->fbWidth,0,rmode->efbHeight,0,300);
 	GX_LoadProjectionMtx(projection, GX_ORTHOGRAPHIC);
 
+	float fps = FPS();
 	PrintText(0, 0, 0, 1.0f, 1.0f, "FPS: %6.1f", fps);
 	//PrintText(0, 0, 20, 1.0f, 1.0f, " Particles: %d", billList->getCount());
 	PrintText(0, 0, 20, 1.0f, 1.0f, " AX: %7.02f", player->ax);
@@ -809,6 +869,8 @@ void Level::Render(){
 
 	guPerspective(projection, 50, rmode->fbWidth/rmode->efbHeight, 0.1f, 100.0f);
 	GX_LoadProjectionMtx(projection, GX_PERSPECTIVE);
+	//*/
+
 
 }
 
@@ -963,8 +1025,10 @@ void Level::moveShots(float speedFactor){
 void Level::Logic(){
 	float speedFactor = updateSpeedFactor();  //update speed according with the cpu speed
 
-	//--DCN: Take out this function, it's bad and horrible and bad! 
-	//player->move(speedFactor);
+	//--DCN: Take out this function, it's bad and horrible and bad!
+
+	// YIKES! This makes everything move WAY too fast! Divide for now
+	player->move(speedFactor/1028);
 
 	// Move player
 	player->pos.z-= 0.03f*speedFactor;;
@@ -994,7 +1058,7 @@ void Level::Logic(){
 		for(iterator2 = objectList->begin(); iterator2 != objectList->end(); ++iterator2){
 			Object3D *obj = static_cast<Object3D *>(*iterator2);
             
-			if(obj->active && obj->model->collisionModel){
+			if(obj->active && obj->model->collisionModel != NULL){
                 
 				Matrix3D m = TranslateMatrix3D(Vector3D(obj->pos.x, obj->pos.y, obj->pos.z));
 				m.rotate(Vector3D(obj->ax, obj->ay, obj->az));
@@ -1013,6 +1077,13 @@ void Level::Logic(){
 		}
 	}
 
+	//--DCN: 
+	/*
+	The objectIterator iterates on the BASE class. 
+	I think that, even though we cast it to a derived class 
+	(Object3D), it isn't recognizing the added variables 
+	in the derived class. Not sure though.
+	//*/
 
 	//Test collisions of ship with asteroids
 	Matrix3D m = TranslateMatrix3D(Vector3D(player->pos.x, player->pos.y, player->pos.z));
@@ -1025,7 +1096,7 @@ void Level::Logic(){
 //
 //
 //THIS is where it all comes crashing down:
-			//*
+			/*
 			if(obj->model->collisionModel != NULL){
 				Matrix3D m = TranslateMatrix3D(Vector3D(obj->pos.x, obj->pos.y, obj->pos.z));
 				m.rotate(Vector3D(obj->ax, obj->ay, obj->az));
@@ -1061,7 +1132,7 @@ void Level::Input(){
 
 	// Would it be better to just grab the whole thing once?
 	// i.e.  wiiData = WPAD_Data(WPAD_CHAN_0);
-	//WPAD_Orientation(WPAD_CHAN_0, &player->orient);
+	WPAD_Orientation(WPAD_CHAN_0, &player->orient);
 	//WPAD_GForce(WPAD_CHAN_0, &player->gforce);
 	WPAD_Accel(WPAD_CHAN_0, &player->accel);
 
