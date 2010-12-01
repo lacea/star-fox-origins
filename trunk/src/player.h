@@ -37,8 +37,8 @@
 #define MAX_X_ROT       30.0f
 #define MAX_Y_ROT       40.0f
 #define MAX_Z_ROT       50.0f
-#define MAX_X           12.0f
-#define MAX_Y           8.0f
+#define MAX_X           6.0f
+#define MAX_Y           6.0f
 
 class Player : public BaseObject{
 
