@@ -173,10 +173,10 @@ void Player::move(float sfactor){
     pos.x += dx * sfactor;
     pos.y += dy * sfactor;
     
-    if (pos.x >  MAX_X) pos.x = MAX_X;
-    if (pos.x < -MAX_X) pos.x = -MAX_X;
-    if (pos.y >  MAX_Y) pos.y = MAX_Y;
-    if (pos.y < -MAX_Y) pos.y = -MAX_Y;    
+    if (pos.x > MAX_X) pos.x = MAX_X;
+    else if (pos.x < -MAX_X) pos.x = -MAX_X;
+    if (pos.y > MAX_Y) pos.y = MAX_Y;
+    else if (pos.y < -MAX_Y) pos.y = -MAX_Y;    
     
     update();
 }

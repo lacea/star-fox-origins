@@ -336,7 +336,7 @@ void Model::buildDisplayList(){
 	int unTexFaces = untexturedFaces();
 
 
-	static const u32 TEMP_SIZE = 16384;
+	static const u32 TEMP_SIZE = 32768;
 
 	if(displayList)
 		free(displayList);
@@ -348,9 +348,6 @@ void Model::buildDisplayList(){
 		// PANIC!
 		exit(1);
 	}
-
-	memset(tmpDisplayList, 0, TEMP_SIZE);
-
 
 	DCInvalidateRange((void*)tmpDisplayList, TEMP_SIZE);
 
@@ -453,38 +450,17 @@ void Model::buildDisplayList(){
 
 	// Copy the temporary DL into our permanent display list
 
-
-	// Possibly this is making it copy too much?
-	//actualDLsize = (GX_EndDispList()+63)&~63;
-	actualDLsize = (GX_EndDispList()+31)&~31;
-	//actualDLsize = GX_EndDispList();
+	//actualDLsize = (GX_EndDispList()+31)&~31;
+	actualDLsize = GX_EndDispList();
 
 	displayList = (u8*)(memalign(32, actualDLsize));
 
-	// Set it all to 0
-	//memset(displayList, 0, actualDLsize);
 	DCInvalidateRange((void*)displayList, actualDLsize);
 
 	memcpy(displayList, tmpDisplayList, actualDLsize);
 	DCFlushRange((void*)displayList, actualDLsize);
 
-	/*
-	// Possibly the way to go? [I don't think so...]
-	actualDLsize = GX_EndDispList();
-	u32 paddedSize = (actualDLsize+31)&~31;
-#ifdef DIFFERENT_ALLOC
-	displayList = (u8*)(memalign(paddedSize, 32));
-	memset(displayList, 0, paddedSize);
-
-#else	
-	displayList = new u8[actualDLsize / sizeof(u8)]; 
-#endif
-
-	memcpy(displayList, tmpDisplayList, actualDLsize);
-	DCFlushRange((void*)displayList, paddedSize);
-
-	//*/
-
+	// Clean up
 	if(tmpDisplayList)
 		free(tmpDisplayList);
 	tmpDisplayList = NULL;
@@ -681,8 +657,7 @@ void Model::loadTGATexture(const char *fileName, GXTexObj& textureObj){
 //
 //----------------------------------------
 
-void Model::render(){
-//void Model::render(Mtx modelview){
+void Model::render(Mtx modelview){
 
 	/*
 	Mtx modelview;
@@ -699,7 +674,7 @@ void Model::render(){
 	guMtxTrans(modelview, x, y, z);
 	//guMtxTransApply(modelview, modelview, x, y, z);
 	//*/
-	//*
+	/*
 	Mtx rot, modelview;
 
 	// Rotate

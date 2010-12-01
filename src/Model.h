@@ -79,8 +79,7 @@ public:
 	//u32 getTextureId(int texture);
 	//void setTextureId(u32 textureId, int texture);
 	void deleteTexture(int texture);
-	void render();
-	//void render(Mtx modelview);
+	void render(Mtx modelview);
 	int getNumberOfVertices(){return num_verts;};
 	int getNumberOfFaces(){return num_faces;};
 	int getNumberOfTextureIds(){return num_textures;};

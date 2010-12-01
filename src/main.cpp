@@ -253,7 +253,7 @@ static void init(){
 	GX_SetNumTexGens(1);
 
 	// Set the width of any lines that we draw
-	GX_SetLineWidth(4, GX_TO_EIGHTH);
+	GX_SetLineWidth(8, GX_TO_EIGHTH);
 
 	GX_SetTevOp(GX_TEVSTAGE0, GX_MODULATE);
 	GX_SetTexCoordGen(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY);
@@ -305,7 +305,7 @@ static void init(){
 
 	//Extra, to see what happens.
 	//--DCN: TAKE IT OUT!
-	GX_SetCullMode(GX_CULL_NONE);
+	//GX_SetCullMode(GX_CULL_NONE);
 
 
 }

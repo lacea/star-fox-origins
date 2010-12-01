@@ -504,14 +504,14 @@ void Level::clear(){
 void Level::renderPlayer(Mtx view){
 	//--DCN: I guess we're not using the view matrix (set by the calling function "render()")
 
-	/*
-	// I think this is rotating and translating TWICE! Oh no!
-	// It's done in state->player->model->render(mv); as well. Maybe I can take it out?!
+	//fprintf(stderr, "[Pos] x: %f, y: %f, z: %f\n", player->pos.x, player->pos.y, player->pos.z);
+	//*
 	Mtx mv, rot;
-	//--DCN: Maybe this?
-	//guMtxCopy(view, mv);
-	guMtxIdentity(mv);
-	guMtxTrans(mv, player->pos.x, player->pos.y, player->pos.z );
+	
+	guMtxCopy(view, mv);
+	//guMtxIdentity(mv);
+	
+	guMtxTransApply(mv, mv, player->pos.x, player->pos.y, player->pos.z);
 
 	guMtxIdentity(rot);
 	guMtxRotDeg(rot, 'x', player->az);
@@ -519,10 +519,13 @@ void Level::renderPlayer(Mtx view){
 	guMtxRotDeg(rot, 'z', player->az);
 
 	guMtxConcat(mv, rot, mv);
+
+	//guMtxConcat(rot, mv, mv);
+
 	player->model->render(mv);
 	//*/
 	// ENABLE FOG
-	player->model->render();
+	//player->model->render();
 	// DISABLE FOG
 
 	/*
@@ -582,7 +585,11 @@ void Level::renderBillBoards(Mtx view){
 	//glDisable(GL_FOG);
 	//*/
 }
-//
+
+
+
+//--DCN: THIS IS WHAT ISN'T WORKING NOW!!!!!
+
 void Level::renderAsteroids(Mtx view){
 	Object3D *tempObject;
 
@@ -600,12 +607,12 @@ void Level::renderAsteroids(Mtx view){
 		//glLoadIdentity( );
 		if(tempObject->pos.z<(camera->pos.z) && tempObject->pos.z>(camera->pos.z-500)){
 
-			/*
+			//*
 			Mtx mv, rot;
 			//--DCN: Maybe this?
 			//guMtxCopy(view, mv);
 			guMtxIdentity(mv);
-			guMtxTrans(mv, tempObject->pos.x, tempObject->pos.y, tempObject->pos.z );
+			guMtxTransApply(mv, mv, tempObject->pos.x, tempObject->pos.y, tempObject->pos.z );
 
 			guMtxIdentity(rot);
 			guMtxRotDeg(rot, 'x', tempObject->az);
@@ -615,7 +622,7 @@ void Level::renderAsteroids(Mtx view){
 			guMtxConcat(mv, rot, mv);
 			tempObject->model->render(mv);
 			//*/
-			tempObject->model->render();
+			//tempObject->model->render();
 
 			/*
 			glPushMatrix();
@@ -652,12 +659,12 @@ void Level::renderShots(Mtx view){
 	while(iterator != playerShotList->end()){
 		temp = static_cast<PlayerShot *>(*iterator);
 
-		/*
+		//*
 		Mtx mv, rot;
 		//--DCN: Maybe this?
 		//guMtxCopy(view, mv);
 		guMtxIdentity(mv);
-		guMtxTrans(mv, temp->pos.x, temp->pos.y, temp->pos.z );
+		guMtxTransApply(mv, mv, temp->pos.x, temp->pos.y, temp->pos.z );
 
 		guMtxIdentity(rot);
 		guMtxRotDeg(rot, 'x', temp->az);
@@ -668,7 +675,7 @@ void Level::renderShots(Mtx view){
 		temp->model->render(mv);
 		//*/
 
-		temp->model->render();
+		//temp->model->render();
 
 		/*
 		glPushMatrix();
@@ -727,9 +734,12 @@ void Level::Render(){
 	// Combining all these one-time-use functions into one!
 	// I told you, I'm CRAZY! 
 	renderPlayer(view);
+	//*
 	renderShots(view);
-	renderAsteroids(view);
+	//--DCN: NOT WORKING:
+	//renderAsteroids(view);
 	renderBillBoards(view);
+	//*/
     
 	//--------------------------
 	// Render the line helper
@@ -737,14 +747,10 @@ void Level::Render(){
 	Mtx rot;		// Rotational matrix
 
 	// Translate
-	guMtxIdentity(modelview);
-	//guMtxTransApply(modelview, modelview, player->pos.x, player->pos.y, player->pos.z);
+	//guMtxIdentity(modelview);
+	guMtxCopy(view, modelview);
+	guMtxTransApply(modelview, modelview, player->pos.x, player->pos.y, player->pos.z);
 
-	//--DCN: For some reason, the z value is a REDICULOUSLY huge number
-	guMtxTransApply(modelview, modelview, player->pos.x/2, player->pos.y/2, - 20);
-
-	
-	//fprintf(stderr, "[Pos] x: %f, y: %f, z: %f\n", player->pos.x, player->pos.y, player->pos.z);
 	// Rotate
 	guMtxIdentity(rot);
 
@@ -769,77 +775,7 @@ void Level::Render(){
 		GX_Color4u8(0xff, 0xff, 0xff, 0xff);
 	GX_End();
 
-	//////////////////////
-	// TESTING
-	//////////////////////
-	//*
-	// Why does this come out GREEN!?!?!
-		u8 r = 0x00;
-		u8 g = 0x00;
-		u8 b = 0xFF;
-
-		//guMtxIdentity(modelview);
-		//guMtxTransApply(modelview, modelview, 0.0f,0.0f,-7.0f);
-		//GX_LoadPosMtxImm(modelview, GX_PNMTX0);
-
-		GX_Begin(GX_QUADS, GX_VTXFMT_CLR, 24);		
-
-			GX_Position3f32(-1.0f,1.0f,1.0f);	// Top Left of the quad (top)
-			GX_Color4u8(r, g, b, 0xff);
-			GX_Position3f32(1.0f,1.0f,1.0f);	// Top Right of the quad (top)
-			GX_Color4u8(r, g, b, 0xff);
-			GX_Position3f32(1.0f,1.0f,-1.0f);	// Bottom Right of the quad (top)
-			GX_Color4u8(r, g, b, 0xff);
-			GX_Position3f32(-1.0f,1.0f,-1.0f);	// Bottom Left of the quad (top)
-			GX_Color4u8(r, g, b, 0xff);
-
-			GX_Position3f32(-1.0f,-1.0f,1.0f);	// Top Left of the quad (bottom)
-			GX_Color4u8(r, g, b, 0xff);
-			GX_Position3f32(1.0f,-1.0f,1.0f);	// Top Right of the quad (bottom)
-			GX_Color4u8(r, g, b, 0xff);
-			GX_Position3f32(1.0f,-1.0f,-1.0f);	// Bottom Right of the quad (bottom)
-			GX_Color4u8(r, g, b, 0xff);
-			GX_Position3f32(-1.0f,-1.0f,-1.0f);	// Bottom Left of the quad (bottom)
-			GX_Color4u8(r, g, b, 0xff);
-
-			GX_Position3f32(-1.0f,1.0f,1.0f);	// Top Left of the quad (front)
-			GX_Color4u8(r, g, b, 0xff);
-			GX_Position3f32(-1.0f,-1.0f,1.0f);	// Top Right of the quad (front)
-			GX_Color4u8(r, g, b, 0xff);
-			GX_Position3f32(1.0f,-1.0f,1.0f);	// Bottom Right of the quad (front)
-			GX_Color4u8(r, g, b, 0xff);
-			GX_Position3f32(1.0f,1.0f,1.0f);	// Bottom Left of the quad (front)
-			GX_Color4u8(r, g, b, 0xff);
-
-			GX_Position3f32(-1.0f,1.0f,-1.0f);	// Top Left of the quad (back)
-			GX_Color4u8(r, g, b, 0xff);
-			GX_Position3f32(-1.0f,-1.0f,-1.0f);	// Top Right of the quad (back)
-			GX_Color4u8(r, g, b, 0xff);
-			GX_Position3f32(1.0f,-1.0f,-1.0f);	// Bottom Right of the quad (back)
-			GX_Color4u8(r, g, b, 0xff);
-			GX_Position3f32(1.0f,1.0f,-1.0f);	// Bottom Left of the quad (back)
-			GX_Color4u8(r, g, b, 0xff);
-
-			GX_Position3f32(-1.0f,1.0f,1.0f);	// Top Left of the quad (left)
-			GX_Color4u8(r, g, b, 0xff);
-			GX_Position3f32(-1.0f,1.0f,-1.0f);	// Top Right of the quad (back)
-			GX_Color4u8(r, g, b, 0xff);
-			GX_Position3f32(-1.0f,-1.0f,-1.0f);	// Bottom Right of the quad (back)
-			GX_Color4u8(r, g, b, 0xff);
-			GX_Position3f32(-1.0f,-1.0f,1.0f);	// Bottom Left of the quad (back)
-			GX_Color4u8(r, g, b, 0xff);
-
-			GX_Position3f32(1.0f,1.0f,1.0f);	// Top Left of the quad (right)
-			GX_Color4u8(r, g, b, 0xff);
-			GX_Position3f32(1.0f,1.0f,-1.0f);	// Top Right of the quad (right)
-			GX_Color4u8(r, g, b, 0xff);
-			GX_Position3f32(1.0f,-1.0f,-1.0f);	// Bottom Right of the quad (right)
-			GX_Color4u8(r, g, b, 0xff);
-			GX_Position3f32(1.0f,-1.0f,1.0f);	// Bottom Left of the quad (right)
-			GX_Color4u8(r, g, b, 0xff);
-
-		GX_End();
-	//*/
+	
 	//-------------------------
 
 	// This is what will become our communications 
@@ -1023,16 +959,16 @@ void Level::moveShots(float speedFactor){
 //----------------------------------------
 
 void Level::Logic(){
-	float speedFactor = updateSpeedFactor();  //update speed according with the cpu speed
-
-	//--DCN: Take out this function, it's bad and horrible and bad!
-
 	// YIKES! This makes everything move WAY too fast! Divide for now
-	player->move(speedFactor/1028);
+	float speedFactor = updateSpeedFactor()/4112;  //update speed according with the cpu speed
 
 	// Move player
-	player->pos.z-= 0.03f*speedFactor;;
-	camera->pos.z = player->pos.z+2.6f;
+	player->move(speedFactor);
+
+	// Move down the path
+	player->pos.z -= 0.03f*speedFactor;
+	camera->pos.z  = player->pos.z+2.6f;
+
     
 	moveShots(speedFactor);
 	moveAsteroids(speedFactor);
