@@ -400,9 +400,6 @@ bool Level::init(u32 level){
 	player->pos.y = 0;
 	player->pos.z = -13;
 	player->destroyable = false;
-	//create player collision object
-	//dtCreateObject(static_cast<BaseObject *>(state->player), state->player->model->shape);
-    
 
 	/*
 	//light
@@ -607,11 +604,9 @@ void Level::renderAsteroids(Mtx view){
 		//glLoadIdentity( );
 		if(tempObject->pos.z<(camera->pos.z) && tempObject->pos.z>(camera->pos.z-500)){
 
-			//*
 			Mtx mv, rot;
-			//--DCN: Maybe this?
-			//guMtxCopy(view, mv);
-			guMtxIdentity(mv);
+			guMtxCopy(view, mv);
+			//guMtxIdentity(mv);
 			guMtxTransApply(mv, mv, tempObject->pos.x, tempObject->pos.y, tempObject->pos.z );
 
 			guMtxIdentity(rot);
@@ -621,18 +616,7 @@ void Level::renderAsteroids(Mtx view){
 
 			guMtxConcat(mv, rot, mv);
 			tempObject->model->render(mv);
-			//*/
-			//tempObject->model->render();
 
-			/*
-			glPushMatrix();
-			glTranslatef(tempObject->pos.x, tempObject->pos.y, tempObject->pos.z );
-			glRotatef(tempObject->ax, 1.0f, 0.0f, 0.0f);
-			glRotatef(tempObject->ay, 0.0f, 1.0f, 0.0f);
-			glRotatef(tempObject->az, 0.0f, 0.0f, 1.0f);
-			tempObject->model->render(view);
-			glPopMatrix();
-			//*/
 			++num_asteroids;
 		}
 		++iterator;
@@ -736,8 +720,7 @@ void Level::Render(){
 	renderPlayer(view);
 	//*
 	renderShots(view);
-	//--DCN: NOT WORKING:
-	//renderAsteroids(view);
+	renderAsteroids(view);
 	renderBillBoards(view);
 	//*/
     
@@ -966,9 +949,10 @@ void Level::Logic(){
 	player->move(speedFactor);
 
 	// Move down the path
+	/*
 	player->pos.z -= 0.03f*speedFactor;
 	camera->pos.z  = player->pos.z+2.6f;
-
+	//*/
     
 	moveShots(speedFactor);
 	moveAsteroids(speedFactor);
