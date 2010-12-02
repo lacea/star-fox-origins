@@ -147,7 +147,11 @@ bool Model::loadModel(const char* modelName,  bool buildCollisionModel){
 
 	//TODO: We should make this dynamic:
 	// Copy the name
-	memcpy(name, modelName, MAX_MODEL_NAME_LENGTH);
+	u32 nameLen = strlen(modelName);
+	if(nameLen > MAX_MODEL_NAME_LENGTH)
+		nameLen = MAX_MODEL_NAME_LENGTH;
+
+	memcpy(name, modelName, nameLen);
 
 
 	// Not needed
@@ -737,5 +741,5 @@ Model* ModelList::getModel(const char* name){
 		if (strcmp(name, list[i]->getName()) == 0)
 			return list[i];
 	}
-	return 0;
+	return NULL;
 }

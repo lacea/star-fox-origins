@@ -80,7 +80,11 @@ void newExit(void);
 
 int main(){
 
-
+	// Have to make sure we can read the SD card before we use it!
+	fatUnmount("sd:/");
+	__io_wiisd.shutdown();
+	fatMountSimple("sd", &__io_wiisd);
+	
 	configData config;
 	// Load in our configuration
 	loadConfigFile(PATH_GAME "config.xml", &config);
@@ -88,8 +92,6 @@ int main(){
 
 	// Initialize our video system
 	init();
-
-	//atexit(newExit);
 
 	// Initialize the console
 	log_console_init(rmode, 0, 30, 30, rmode->fbWidth - 200, rmode->xfbHeight - 60);
@@ -101,11 +103,6 @@ int main(){
 	// Create a new gamestate
     gameState = new Level();
 
-	// Have to make sure we can read the SD card before we use it!
-	fatUnmount("sd:/");
-	__io_wiisd.shutdown();
-	fatMountSimple("sd", &__io_wiisd);
-	
 	// Create and load the font
     InitFontSystem();
 	LoadFont(PATH_FONT"font.tga", gameState->font);
@@ -121,7 +118,7 @@ int main(){
         quit_game(1);
 
 	// Set the console to invisible
-	log_console_enable_video(false);
+	//log_console_enable_video(false);
 
 
 	// Go through the main loop
@@ -306,7 +303,7 @@ static void init(){
 	//Extra, to see what happens.
 	//--DCN: TAKE IT OUT!
 	//GX_SetCullMode(GX_CULL_NONE);
-
+	//GX_SetCullMode(GX_CULL_FRONT);
 
 }
 
