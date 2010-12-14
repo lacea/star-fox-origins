@@ -107,7 +107,7 @@ int main(){
 
 	// Create and load the font
 	screenText = new Font();
-	screenText->Load(PATH_FONT"font.png", gameState->font);
+	screenText->Load(PATH_FONT"plain.png", gameState->font);
 
 	// Change the button configuration
     gameState->btns->change(CHANGE_BTN_SHOT, config.shotBtn);
