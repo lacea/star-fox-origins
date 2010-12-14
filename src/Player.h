@@ -19,6 +19,7 @@
 #ifndef __SF_PLAYER__
 #define __SF_PLAYER__
 
+#include "StdInc.h"
 #include "math.h"
 #include "Buttons.h"
 #include "Model.h"
@@ -29,44 +30,42 @@
 #define ROT_X_SPEED     0.7f
 #define ROT_Y_SPEED     0.7f
 #define ROT_Z_SPEED     0.4f
-#define MAX_X_SPEED     0.0020f
-#define MAX_Y_SPEED     0.06f
+#define MAX_X_SPEED     0.00040f
+#define MAX_Y_SPEED     0.006f
 #define DEC_X_SPEED     0.06f
 #define DEC_Y_SPEED     0.06f
 #define MAX_D_SPEED     0.02f
 #define MAX_X_ROT       30.0f
 #define MAX_Y_ROT       40.0f
 #define MAX_Z_ROT       50.0f
-#define MAX_X           6.0f
-#define MAX_Y           6.0f
+#define MAX_X           5.5f
+#define MAX_Y           5.5f
 
 class Player : public BaseObject{
 
 public:
-    float ax, ay, az;
-    float dx, dy, dz;
-    a3dssMatrix3 rMatrix;
-    Buttons *btns;
-    u16  lives;
-    u16  bombs;
-    float shield;
-    Model *model;
-    float mSparkState;
-    float lSparkState;
-    float rSparkState;
+	Mtx rotationMtx;
+	//a3dssMatrix3 rMatrix;
+	Buttons *btns;
+	Model *model;
 	
+	f32 ax, ay, az;
+	f32 oldax, olday, oldaz;
+	f32 dx, dy, dz;
+	f32 shield;
+	f32 mSparkState;
+	f32 lSparkState;
+	f32 rSparkState;
+	u16 lives;
+	u16 bombs;
 	//
 
-    Player(Buttons *btns);
-    Player(Buttons *btns, float x, float y, float z);
-    ~Player();
-    void move(float sfactor);
-    void update();
-    void clear();
-
-
-
-	//--DCN: My particular variables
+	Player(Buttons *btns);
+	Player(Buttons *btns, f32 x, f32 y, f32 z);
+	~Player();
+	void move(float sfactor);
+	void update();
+	void clear();
 
 	// Wiimote data
 	vec3w_t  accel;	  // Wiimote acceleration

@@ -15,28 +15,26 @@
     You should have received a copy of the GNU General Public License
     along with StarFox Origins.  If not, see <http://www.gnu.org/licenses/>.
 */
-//Original:
-//-----------------------------------------------------------------------------
-// texture.h
-// By martin_bfg10k (martinbfg10k@gmail.com)
-// Simple texture manager.
-// Only loads uncompressed .tga textures.
-//-----------------------------------------------------------------------------
 
-#ifndef __SF_CTEXTURE__
-#define __SF_CTEXTURE__
+#ifndef __SF_TextureMgr__
+#define __SF_TextureMgr__
 
 #include "StdInc.h"
 #include <vector>
+#include <malloc.h>
+#include "libpng/pngu/pngu.h"
 
-class CTexture{
+bool LoadTexture(const char* fileName, GXTexObj &textureObj);
+
+class TextureMgr{
 
 public:
-    CTexture();
-    ~CTexture();
+    TextureMgr();
+    ~TextureMgr();
 
-    bool pushTexture(const char *);
-    GXTexObj* getTexture(int index);
+    bool pushTexture(const char* fileName);
+    GXTexObj* getTexture(s32 index);
+	s32 size();
     void clear();
 
 private:

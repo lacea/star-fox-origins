@@ -36,4 +36,32 @@ public:
 	//Object3D(Model* mdl, float x, float y, float z);
 };
 
+
+/*
+// From BaseObject
+
+//Define an iterator for select objects from the list
+typedef std::list<Object3D* >::iterator object3DIterator;
+
+// Typedef for the Compare Function used for sort.
+typedef int (*cmp3D)(const void *, const void *);
+
+class Object3DList{
+	void QSort(int l, int r);
+    cmp3D Compare;   //compare function for sort
+public:
+    std::list<Object3D *> vector;
+    
+    Object3DList();
+    ~Object3DList();
+    void push(Object3D*);
+    int sort(int (*compareFunction)(const void*, const void*));
+    void clear();
+    int getCount();
+    object3DIterator begin();
+    object3DIterator end();
+    object3DIterator erase(object3DIterator iterator);
+};
+
+//*/
 #endif

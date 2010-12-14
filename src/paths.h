@@ -27,6 +27,7 @@
 
 #define PATH_LEVELS		PATH_DATA"levels/"
 #define PATH_TEXTURES	PATH_DATA"textures/"
+#define PATH_EXPLOSIONS PATH_TEXTURES"explosions/"
 #define PATH_MODELS		PATH_DATA"models/"
 #define PATH_FONT		PATH_DATA"fonts/"
 

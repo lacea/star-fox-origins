@@ -1,5 +1,6 @@
 /*   ColDet - C++ 3D Collision Detection Library
  *   Copyright (C) 2000   Amir Geva
+ *   Copyright (C) 2010   Michael Wells (dancinninjac@gmail.com)
  * 
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -51,6 +52,15 @@ void CollisionModel3DImpl::addTriangle(const Vector3D& v1, const Vector3D& v2, c
   if (m_Final) throw Inconsistency();
   m_Triangles.push_back(BoxedTriangle(v1,v2,v3));
 }
+
+/*
+//--DCN: Wii-specific
+void CollisionModel3DImpl::addTriangle(const guVector& v1, const guVector& v2, const guVector& v3){
+  if (m_Final) throw Inconsistency();
+  m_Triangles.push_back(BoxedTriangle(v1,v2,v3));
+}
+//*/
+
 
 void CollisionModel3DImpl::setTransform(const Matrix3D& m)
 {

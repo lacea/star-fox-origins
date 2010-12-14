@@ -22,9 +22,9 @@
 #include "gameState.h"
 #include "camera.h"
 #include "paths.h"
-#include "font.h"
+#include "Font.h"
 #include "Model.h"
-#include "CTexture.h"
+#include "TextureMgr.h"
 #include "Buttons.h"
 #include "player.h"
 #include "xml/config.h"
@@ -46,10 +46,13 @@
 //----------------------//
 
 // Current level
-u32 curLevel = 1;
+s32 curLevel = 1;
 
 // This is our current gamestate (replace with something dynamic)
 Level* gameState;
+
+// The text that is typed on the screen
+Font* screenText;
 
 //----------------------//
 // Wii setup variables  //
@@ -97,15 +100,14 @@ int main(){
 	log_console_init(rmode, 0, 30, 30, rmode->fbWidth - 200, rmode->xfbHeight - 60);
 	log_console_enable_video(true);
 
-
 	printf("Booting up.\n");			
 	
 	// Create a new gamestate
     gameState = new Level();
 
 	// Create and load the font
-    InitFontSystem();
-	LoadFont(PATH_FONT"font.tga", gameState->font);
+	screenText = new Font();
+	screenText->Load(PATH_FONT"font.png", gameState->font);
 
 	// Change the button configuration
     gameState->btns->change(CHANGE_BTN_SHOT, config.shotBtn);
@@ -118,7 +120,7 @@ int main(){
         quit_game(1);
 
 	// Set the console to invisible
-	//log_console_enable_video(false);
+	log_console_enable_video(false);
 
 
 	// Go through the main loop
@@ -261,7 +263,7 @@ static void init(){
 	GX_SetAlphaUpdate(GX_TRUE);
 	GX_SetColorUpdate(GX_TRUE);
 
-	guPerspective(projection, 50, rmode->fbWidth/rmode->efbHeight, 0.1f, 100.0f);
+	guPerspective(projection, 45, rmode->fbWidth/rmode->efbHeight, 0.1f, 100.0f);
 	GX_LoadProjectionMtx(projection, GX_PERSPECTIVE);
 
 	guMtxIdentity(modelview);
@@ -302,14 +304,14 @@ static void init(){
 
 	//Extra, to see what happens.
 	//--DCN: TAKE IT OUT!
-	//GX_SetCullMode(GX_CULL_NONE);
+	GX_SetCullMode(GX_CULL_NONE);
 	//GX_SetCullMode(GX_CULL_FRONT);
 
 }
 
 //
 static void quit_game(int code){
-    KillFontSystem();
+    delete screenText;
     delete gameState;
     //newExit();
 	exit(code);
