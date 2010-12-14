@@ -1,5 +1,6 @@
 /*   ColDet - C++ 3D Collision Detection Library
  *   Copyright (C) 2000   Amir Geva
+ *   Copyright (C) 2010   Michael Wells (dancinninjac@gmail.com)
  * 
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -29,8 +30,6 @@
 #include "math3d.h"
 #include <vector>
 
-
-
 class CollisionModel3DImpl : public CollisionModel3D
 {
 public:
@@ -51,6 +50,10 @@ public:
                 Vector3D(v2[0],v2[1],v2[2]),
                 Vector3D(v3[0],v3[1],v3[2]));
   }
+  
+  //--DCN: Wii-specific
+  //void addTriangle(const guVector& v1, const guVector& v2, const guVector& v3);
+  
   void addTriangle(const Vector3D& v1, const Vector3D& v2, const Vector3D& v3);
   void finalize();
 

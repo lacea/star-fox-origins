@@ -43,6 +43,15 @@ public:
     
 };
 
+//--DCN: THIS must be rewritten. Some objects have models, some don't.
+// The models are not available with a simple static_cast done to
+// the objectIterator later in the program.
+
+// Probably several objectIterators will be needed.
+//		- Player lasers
+//		- Asteroids (or any 3D object)
+//		- Billboards (2D objects)
+
 //Define an iterator for select objects from the list
 typedef std::list<BaseObject* >::iterator objectIterator;
 

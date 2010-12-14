@@ -44,13 +44,9 @@ Model::Model(): collisionModel(NULL),
 				sizeX(0.0f), sizeY(0.0f), sizeZ(0.0f),
 				num_verts(0), num_faces(0),
 				textureObjs(NULL), 
-				//textureNames(NULL), 
 				num_textures(0)
 {
-	
 	memset(name,0,MAX_MODEL_NAME_LENGTH);
-	//memset(filename,0,256);
-
 }
 
 //----------------------------------------
@@ -72,7 +68,6 @@ Model::Model(const char * fileName, bool buildCollisionModel):
 				sizeX(0.0f), sizeY(0.0f), sizeZ(0.0f),
 				num_verts(0), num_faces(0),
 				textureObjs(NULL), 
-				//textureNames(NULL), 
 				num_textures(0)
 {
 	memset(name,0,MAX_MODEL_NAME_LENGTH);
@@ -101,7 +96,6 @@ Model::~Model(){
 
 	if(displayList)
 		free(displayList);
-
 	displayList = NULL;
 
 }
@@ -123,7 +117,6 @@ Model::~Model(){
 //----------------------------------------
 
 bool Model::loadModel(const char* modelName,  bool buildCollisionModel){
-
 
 	std::string fileName = PATH_MODELS;
 	fileName += modelName;
@@ -171,12 +164,11 @@ bool Model::loadModel(const char* modelName,  bool buildCollisionModel){
 			texture += texNode->FirstChild()->Value();
 
 			// Load the texture!
-			loadTGATexture(texture.c_str(), textureObjs[i]);  
+			loadInTexture(texture.c_str(), textureObjs[i]);  
 		}
 	}
 
-	// Textures loaded, moving on to vertices.
-
+	// Load the vertices
 
 	TiXmlElement* verts = model.FirstChild("verts").Element();
 	TiXmlNode* vert = verts->FirstChild("vert");
@@ -189,16 +181,16 @@ bool Model::loadModel(const char* modelName,  bool buildCollisionModel){
 		node = vert->FirstChild("pos");
 
 		// Read in the vertex data
-		vList[i].v[0] = float(atof(node.Element()->Attribute("x")));
-		vList[i].v[1] = float(atof(node.Element()->Attribute("y")));
-		vList[i].v[2] = float(atof(node.Element()->Attribute("z")));
+		vList[i].v.x = float(atof(node.Element()->Attribute("x")));
+		vList[i].v.y = float(atof(node.Element()->Attribute("y")));
+		vList[i].v.z = float(atof(node.Element()->Attribute("z")));
 
 		node = vert->FirstChild("norm");
 
 		// Read in the normal data
-		vList[i].n[0] = float(atof(node.Element()->Attribute("x")));
-		vList[i].n[1] = float(atof(node.Element()->Attribute("y")));
-		vList[i].n[2] = float(atof(node.Element()->Attribute("z")));	
+		vList[i].n.x = float(atof(node.Element()->Attribute("x")));
+		vList[i].n.y = float(atof(node.Element()->Attribute("y")));
+		vList[i].n.z = float(atof(node.Element()->Attribute("z")));	
 
 		// Move to the next one
 		vert = vert->NextSiblingElement("vert");
@@ -213,7 +205,7 @@ bool Model::loadModel(const char* modelName,  bool buildCollisionModel){
 	for (int i = 0; i < num_faces; i++){
 
 		// Get the texture index
-		fList[i].tIndex = atoi(face->ToElement()->Attribute("texIndex"));
+		fList[i].tIndex = atoi(face->ToElement()->Attribute("texIndex")) - 1;
 			
 
 		// We're recycling our pointers here:
@@ -252,10 +244,7 @@ bool Model::loadModel(const char* modelName,  bool buildCollisionModel){
 		fList[i].uv[1] = float(atof(node.Element()->Attribute("y")));
 		fList[i].uv[2] = float(atof(node.Element()->Attribute("z")));	
 
-		// Can I do this?
-		//node = uvParent->FirstChild("v")->Element();
-		// Perhaps like this:
-		//node = node->NextSiblingElement("v");
+		node = uvParent->FirstChild("v");
 
 		fList[i].uv[3] = float(atof(node.Element()->Attribute("x")));
 		fList[i].uv[4] = float(atof(node.Element()->Attribute("y")));
@@ -282,7 +271,19 @@ bool Model::loadModel(const char* modelName,  bool buildCollisionModel){
 		collisionModel = new CollisionModel3DImpl(false);
 	
 		for (s32 i = 0; i < num_faces; ++i){
-			collisionModel->addTriangle(vList[fList[i].v[0]].v, vList[fList[i].v[1]].v, vList[fList[i].v[2]].v);
+			//--DCN: A temporary measure, until the collision detection is redone.
+			collisionModel->addTriangle(vList[fList[i].v[0]].v.x,
+										vList[fList[i].v[0]].v.y,
+										vList[fList[i].v[0]].v.z,
+										vList[fList[i].v[1]].v.x,
+										vList[fList[i].v[1]].v.y,
+										vList[fList[i].v[1]].v.z,
+										vList[fList[i].v[2]].v.x,
+										vList[fList[i].v[2]].v.y,
+										vList[fList[i].v[2]].v.z
+										);
+			//collisionModel->addTriangle(vList[fList[i].v[0]].v, vList[fList[i].v[1]].v, vList[fList[i].v[2]].v);
+		
 		}
 		collisionModel->finalize();
 	}
@@ -307,12 +308,12 @@ bool Model::loadModel(const char* modelName,  bool buildCollisionModel){
 //
 //----------------------------------------
 
-int Model::untexturedFaces(){
+s32 Model::untexturedFaces(){
 	if (num_faces == 0) return 0;
 	int num = 0;    
 	int i = num_faces - 1;
 	do{
-		if (fList[i].tIndex == 0)
+		if (fList[i].tIndex == -1)
 			++num;
 		--i;
 	}while(i >= 0);
@@ -334,33 +335,32 @@ int Model::untexturedFaces(){
 //----------------------------------------
 
 void Model::buildDisplayList(){
-	int i = 0, j = 0;
+	int j = 0;
 	if (num_faces == 0) return;
 
-	int unTexFaces = untexturedFaces();
-
-
-	static const u32 TEMP_SIZE = 32768;
+	s32 unTexFaces = untexturedFaces();
 
 	if(displayList)
 		free(displayList);
 	displayList = NULL;
 
-	u8* tmpDisplayList = (u8*)(memalign(32, TEMP_SIZE));
+	u8* tmpDisplayList = (u8*)(memalign(32, TEMP_DISPLIST_SIZE));
 
 	if(!tmpDisplayList){
 		// PANIC!
 		exit(1);
 	}
 
-	DCInvalidateRange((void*)tmpDisplayList, TEMP_SIZE);
+	DCInvalidateRange((void*)tmpDisplayList, TEMP_DISPLIST_SIZE);
 
-	GX_BeginDispList(tmpDisplayList, TEMP_SIZE);
+	GX_BeginDispList(tmpDisplayList, TEMP_DISPLIST_SIZE);
+
 
 	//--DCN: Might need to get rid of this one entirely,
 	// or something else, because I'm not sure we're allowed
 	// to do a "clearVtxDesc()" and such inside a display list.
 	// Render the untextured faces
+	//*
 	if (unTexFaces > 0){
 
 		//
@@ -372,27 +372,29 @@ void Model::buildDisplayList(){
 
 
 		GX_Begin(GX_TRIANGLES, GX_VTXFMT_CLR, 3*unTexFaces);
-			for (i = 0; i < unTexFaces; i++){
+			for (s32 i = 0; i < unTexFaces; i++){
 
-				GX_Position3f32(vList[fList[i].v[0]].v[0],
-								vList[fList[i].v[0]].v[1],
-								vList[fList[i].v[0]].v[2]);
+				GX_Position3f32(vList[fList[i].v[0]].v.x,
+								vList[fList[i].v[0]].v.y,
+								vList[fList[i].v[0]].v.z);
 				GX_Color4u8(fList[i].c[0], fList[i].c[1], fList[i].c[2], 0xff);
 
-				GX_Position3f32(vList[fList[i].v[1]].v[0],
-								vList[fList[i].v[1]].v[1],
-								vList[fList[i].v[1]].v[2]);
+				GX_Position3f32(vList[fList[i].v[1]].v.x,
+								vList[fList[i].v[1]].v.y,
+								vList[fList[i].v[1]].v.z);
 				GX_Color4u8(fList[i].c[3], fList[i].c[4], fList[i].c[5], 0xff);
 
-				GX_Position3f32(vList[fList[i].v[2]].v[0],
-								vList[fList[i].v[2]].v[1],
-								vList[fList[i].v[2]].v[2]);
+				GX_Position3f32(vList[fList[i].v[2]].v.x,
+								vList[fList[i].v[2]].v.y,
+								vList[fList[i].v[2]].v.z);
 				GX_Color4u8(fList[i].c[6], fList[i].c[7], fList[i].c[8], 0xff);
 			}
 
 		GX_End();
 
 	}
+	//*/
+	//*
 	// Render the textured faces
 	if ((num_faces - unTexFaces) > 0){
 		j = unTexFaces;
@@ -407,42 +409,44 @@ void Model::buildDisplayList(){
 		GX_SetVtxDesc(GX_VA_CLR0, GX_DIRECT);
 		GX_SetVtxDesc(GX_VA_TEX0, GX_DIRECT);
 
-		for (i = 0; i< num_textures; ++i){
+		//--DCN: This is a bad way to do things. BAD!
+		// It's going by the textures, we can't use trianglefans.
+		for (s32 i = 0; i< num_textures; ++i){
 
 			GX_LoadTexObj(&textureObjs[i], GX_TEXMAP0);
 
-			while((fList[j].tIndex-1) == i && j < num_faces){
+			while(fList[j].tIndex == i && j < num_faces){
 
 				// Fine, rather than being on the outside it'll be on the inside. 
 
 				GX_Begin(GX_TRIANGLES, GX_VTXFMT_TEX_NRM_CLR, 3);
 
-					GX_Position3f32(vList[fList[j].v[0]].v[0],
-									vList[fList[j].v[0]].v[1],
-									vList[fList[j].v[0]].v[2]);
-					GX_Normal3f32(vList[fList[j].v[0]].n[0],
-								  vList[fList[j].v[0]].n[1],
-								  vList[fList[j].v[0]].n[2]);
+					GX_Position3f32(vList[fList[j].v[0]].v.x,
+									vList[fList[j].v[0]].v.y,
+									vList[fList[j].v[0]].v.z);
+					GX_Normal3f32(vList[fList[j].v[0]].n.x,
+								  vList[fList[j].v[0]].n.y,
+								  vList[fList[j].v[0]].n.z);
 					GX_TexCoord2f32(fList[j].uv[0], 1-fList[j].uv[1]);
-					GX_Color4u8(0xff,0xff,0xff,0xff);
+					GX_Color4u8(fList[j].c[0],fList[j].c[1],fList[j].c[2], 0xff);
 					//
-					GX_Position3f32(vList[fList[j].v[1]].v[0],
-									vList[fList[j].v[1]].v[1],
-									vList[fList[j].v[1]].v[2]);
-					GX_Normal3f32(vList[fList[j].v[1]].n[0],
-								  vList[fList[j].v[1]].n[1],
-								  vList[fList[j].v[1]].n[2]);
+					GX_Position3f32(vList[fList[j].v[1]].v.x,
+									vList[fList[j].v[1]].v.y,
+									vList[fList[j].v[1]].v.z);
+					GX_Normal3f32(vList[fList[j].v[1]].n.x,
+								  vList[fList[j].v[1]].n.y,
+								  vList[fList[j].v[1]].n.z);
 					GX_TexCoord2f32(fList[j].uv[2], 1-fList[j].uv[3]);
-					GX_Color4u8(0xff,0xff,0xff,0xff);
+					GX_Color4u8(fList[j].c[3],fList[j].c[4],fList[j].c[5], 0xff);
 					//
-					GX_Position3f32(vList[fList[j].v[2]].v[0],
-									vList[fList[j].v[2]].v[1],
-									vList[fList[j].v[2]].v[2]);
-					GX_Normal3f32(vList[fList[j].v[2]].n[0],
-								  vList[fList[j].v[2]].n[1],
-								  vList[fList[j].v[2]].n[2]);
+					GX_Position3f32(vList[fList[j].v[2]].v.x,
+									vList[fList[j].v[2]].v.y,
+									vList[fList[j].v[2]].v.z);
+					GX_Normal3f32(vList[fList[j].v[2]].n.x,
+								  vList[fList[j].v[2]].n.y,
+								  vList[fList[j].v[2]].n.z);
 					GX_TexCoord2f32(fList[j].uv[4], 1-fList[j].uv[5]);
-					GX_Color4u8(0xff,0xff,0xff,0xff);
+					GX_Color4u8(fList[j].c[6],fList[j].c[7],fList[j].c[8], 0xff);
 
 				GX_End();
 
@@ -451,10 +455,10 @@ void Model::buildDisplayList(){
 			}
 		}
 	}
+	//*/
 
 	// Copy the temporary DL into our permanent display list
 
-	//actualDLsize = (GX_EndDispList()+31)&~31;
 	actualDLsize = GX_EndDispList();
 
 	displayList = (u8*)(memalign(32, actualDLsize));
@@ -468,15 +472,13 @@ void Model::buildDisplayList(){
 	if(tmpDisplayList)
 		free(tmpDisplayList);
 	tmpDisplayList = NULL;
-
 }
 
 //----------------------------------------
 //
-// Function: loadTGATexture
+// Function: loadInTexture
 //
-//		Loads in a .tga file for the texture.
-//		(Exactly the same as LoadFont!)
+//		Loads in a file for the texture.
 //
 // @pre     The texture to be loaded should exist!
 // @post    The textures has been loaded and primed for use
@@ -486,166 +488,8 @@ void Model::buildDisplayList(){
 //
 //----------------------------------------
 
-void Model::loadTGATexture(const char *fileName, GXTexObj& textureObj){
-	const u8 TGAheader[12] = {0,0,2,0,0,0,0,0,0,0,0,0};      // Uncompressed TGA header
-	u8 TGAcompare[12];               // Used to compare TGA header
-	u8 header[6];                    // First 6 useful bytes from the header
-	u32 bytesPerPixel;               // Holds number of bytes per pixel used in the TGA file
-	u32 bpp;                         // Image color depth in bits per pixel
-	u32 imageSize;                   // Used to store the image size when setting aside ram
-	u8 *imageData = 0;	             // Image data (Up To 32 Bits)
-	u32 temp;                        // Temporary variable
-	//u32 type = GL_RGBA;            // Set the default GL mode to RBGA (32 BPP)
-	u32 width;                       // Image width
-	u32 height;                      // Image height
-
-	FILE *file = fopen(fileName, "rb");            // Open the TGA file
-
-	if( !file || fread(TGAcompare,1,sizeof(TGAcompare),file)!=sizeof(TGAcompare) ||  // Are there 12 bytes to read?
-		memcmp(TGAheader,TGAcompare,sizeof(TGAheader))!=0 ||                // Does the header match what we want?
-		fread(header,1,sizeof(header),file)!=sizeof(header)){               // If so read next 6 header bytes
-    
-		if (!file){
-			fprintf(stderr,"Error: Cannot load %s\n", fileName);
-			return;
-		}else{
-			fprintf(stderr,"Error: %s is an invalid TGA texture\n", fileName);
-			fclose(file);                // If anything failed, close the file
-			return;
-		}
-	}
-
-	width  = header[1] * 256 + header[0];        // Determine the TGA width (highbyte*256+lowbyte)
-	height = header[3] * 256 + header[2];        // Determine the TGA height (highbyte*256+lowbyte)
-    
-	 if(width <= 0 || height <= 0 || (header[4]!=24 && header[4]!=32)){ // Is the TGA 24 or 32 bit?
-    
-		fprintf(stderr,"Error: %s is an invalid TGA texture\n", fileName);
-		fclose(file);                    // If anything failed, close the file
-		return;
-	}
-
-#ifdef TODO_TEXTURE
-
-	bpp = header[4];                           // Grab the TGA's bits per pixel (24 or 32)
-	bytesPerPixel = bpp/8;                     // Divide by 8 to get the bytes per pixel
-	imageSize = width*height*bytesPerPixel;    // Calculate the memory required for the TGA data
-    
-	u8* temp = new (std::nothrow) u8 [imageSize];       
-	imageData = new (std::nothrow) u8 [width*height*4];   //This will always be 32 bits
-
-	if(!temp || fread(temp, 1, imageSize, file) != imageSize){
-		if(temp)
-			delete [] temp;
-
-		delete [] imageData;
-
-		fprintf(stderr,"Error: cannot load %s\n", fileName);
-		fclose(file);                       // Close the file
-		return;
-	} 
-	fclose (file);                            // Close the file
-
-
-
-	if( bytesPerPixel == 4){
-		// We have alpha
-
-		for(u32 i = 0; i < imageSize; i += bytesPerPixel){
-	                                    
-			// We may not need to switch these, if so, just copy them!
-			//memcpy(...);
-			imageData[i]   = temp[i+2];               
-			imageData[i+1] = temp[i+1];  
-			imageData[i+2] = temp[i]; 
-			imageData[i+3] = temp[i+3]; 
-		}
-	}else{
-		// We do NOT have alpha
-		u32 j = 0;
-		for(u32 i = 0; i < imageSize; i += bytesPerPixel){
-	                                       
-			// We may not need to switch these, if so, just copy them!
-			//memcpy(...);
-			imageData[j]   = temp[i+2];               
-			imageData[j+1] = temp[i+1];  
-			imageData[j+2] = temp[i]; 
-			imageData[j+3] = 0xff; 
-	
-			j += 4;		// 4 bytes per pixel
-
-		}
-
-	}
-
-#else
-
-	 // This is the original:
-
-
-	bpp = header[4];                           // Grab the TGA's bits per pixel (24 or 32)
-	bytesPerPixel = bpp/8;                     // Divide by 8 to get the bytes per pixel
-	imageSize = width*height*bytesPerPixel;    // Calculate the memory required for the TGA data
-    
-	imageData = new (std::nothrow) u8 [imageSize];        // Reserve memory to hold the TGA data
-
-	if(!imageData ||                        // Does the storage memory exist?
-		fread(imageData, 1, imageSize, file)!=imageSize){    // Does the image size match the memory reserved?
-   
-		if(imageData)        // Was image data loaded
-			delete [] imageData;            // If so, release the image data
-		fprintf(stderr,"Error: cannot load %s\n", fileName);
-		fclose(file);                       // Close the file
-		return;
-	}
-    
-	fclose (file);                            // Close the file
-	for(u32 i = 0; i < imageSize; i += bytesPerPixel){         // Loop through the image data
-											// Swaps the 1st and 3rd bytes ('R'ed and 'B'lue)
-		temp=imageData[i];                  // Temporarily store the value at image data 'i'
-		imageData[i] = imageData[i + 2];    // Set the 1st byte to the value of the 3rd byte
-		imageData[i + 2] = temp;            // Set the 3rd byte to the value in 'temp' (1st byte value)
-	}
-    
-#endif
-
-
-	GX_InitTexObj(&textureObj, imageData, width, height, 
-		// Um! See the "gluBuild2DMipmaps" in the OGl code below. There is no GX_TF_RGB to use!
-		(bpp == 24) ? GX_TF_RGBA8 : GX_TF_RGBA8, 
-		GX_CLAMP, GX_CLAMP, GX_TRUE );
-
-	// GX_LIN_MIP_LIN is taxing, please see if we can get by with something less
-	GX_InitTexObjLOD(&textureObj, GX_LIN_MIP_LIN, GX_LINEAR, 0, 5, 0, GX_DISABLE, GX_DISABLE, GX_ANISO_1);
-	// I also made up values for min LOD, max LOD, and the LOD bias.
-
-
-	/*
-	//Create the texture
-	glGenTextures(1, textureId);
-    
-	//Load the texture
-	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, *textureId);
-    
-	//Generate the texture
-	if (bpp==24){      // Was the TGA 24 bits   
-		// If so set the 'type' to GL_RGB
-		gluBuild2DMipmaps(GL_TEXTURE_2D, 3, width, height, GL_RGB, GL_UNSIGNED_BYTE, imageData);
-	}else{    
-		// If not, build texture with alpha channel
-		gluBuild2DMipmaps(GL_TEXTURE_2D, 4, width, height, GL_RGBA, GL_UNSIGNED_BYTE, imageData);
-	}
-    
-	//Use nearest filtering, very good
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	
-	//*/
-	delete[] imageData;
-	imageData = NULL;
+void Model::loadInTexture(const char *fileName, GXTexObj& textureObj){
+	LoadTexture(fileName, textureObj);
 }
 
 //----------------------------------------
@@ -696,6 +540,18 @@ void Model::render(Mtx modelview){
 	//*/
 
 	GX_LoadPosMtxImm(modelview, GX_PNMTX0);
+
+	Mtx tempMtx, normMtx, texMtx;
+
+	guMtxInverse(modelview, tempMtx);
+    guMtxTranspose(tempMtx, normMtx);
+	GX_LoadNrmMtxImm(normMtx, GX_PNMTX0);
+
+	// Should we put something else here?
+	/*
+	guMtxIdentity(texMtx);
+	GX_LoadTexMtxImm(texMtx, GX_PNMTX0);
+	//*/
 
 	GX_CallDispList(displayList, actualDLsize);
 

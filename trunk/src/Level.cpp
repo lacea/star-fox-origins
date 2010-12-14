@@ -98,7 +98,7 @@ Level::Level(){
 	modelList = new ModelList();
 	objectList = new ObjectList();
 	playerShotList = new ObjectList();
-	objectTextures = new CTexture();
+	objectTextures = new TextureMgr();
 	player = new Player(btns);
 
 }
@@ -166,10 +166,15 @@ static bool bills(Billboard * bill, Level* lvl, float speedFactor){
 
 bool mShotCallbackL1(Billboard * bill, Level* lvl, float speedFactor){
 	
-	a3dssVector3 pos = lvl->player->rMatrix * a3dssVector3(0.0f ,-0.05f, -0.42f);
-	// GX way:
-	//guMtxTransApply(lvl->player->rMatrix, 0, -0.05f, -0.42f);
-	
+	//a3dssVector3 pos = lvl->player->rMatrix * a3dssVector3(0.0f ,-0.05f, -0.42f);
+
+	guVector temppos;
+	guVector adjustPos = {0.0f ,-0.05f, -0.42f};
+	guVecMultiply(lvl->player->rotationMtx, &adjustPos, &temppos);
+	//TODO: Convert this into guVectors!
+	a3dssVector3 pos(temppos.x, temppos.y, temppos.z);
+
+	//*/
 	bill->pos = lvl->player->pos + pos;
 	bill->width -= 0.03 * speedFactor;
 	bill->height -= 0.03 * speedFactor;
@@ -286,21 +291,21 @@ bool Level::loadLevelFile(string xmlFile){
 //----------------------------------------
 
 bool Level::init(u32 level){
-	//state = gameState;
-	Object3D *tempObject = NULL;
-	Billboard *bill = NULL;
-	Model* model;
+
+	Object3D* tempObject = NULL;
+	Billboard* bill = NULL;
+	Model* model = NULL;
 
 	srand(0);
 
 	// Convert the level number into a file name.
 	stringstream levelStr(stringstream::in | stringstream::out);
-	if(level <=9)
+	if(level <= 9){
 		levelStr << "0";
+	}
 	levelStr << level;
 	string xmlFile = string(PATH_LEVELS"/level") + levelStr.str() + "/level.xml";
-	//string xmlFile = PATH_LEVELS"/level1/level.xml";
-	
+
 	// Load the level from the file
 	loadLevelFile(xmlFile);
 
@@ -330,9 +335,10 @@ bool Level::init(u32 level){
 
 
 	// Load and push all the textures
-	objectTextures->pushTexture(PATH_TEXTURES "flare.tga");
-	objectTextures->pushTexture(PATH_TEXTURES "particle.tga");
-	objectTextures->pushTexture(PATH_TEXTURES "explos01.tga");
+	objectTextures->pushTexture(PATH_TEXTURES "flare.png");
+	objectTextures->pushTexture(PATH_TEXTURES "particle.png");
+	objectTextures->pushTexture(PATH_EXPLOSIONS "explosion01.png");
+	objectTextures->pushTexture(PATH_TEXTURES "aim-reticule.png");
 
 
 	// Load and push all the models
@@ -386,7 +392,6 @@ bool Level::init(u32 level){
 	tempObject->ay = 0.0f;
 	tempObject->az = 0.0f;
 
-	//dtCreateObject(static_cast<BaseObject *>(tempObject), tempObject->model->shape);
 	objectList->push(tempObject);
 
 
@@ -437,16 +442,15 @@ bool Level::init(u32 level){
 
 	// Go here:
 	//http://www.google.com/codesearch/p?hl=en#F_nIpjgRyso/trunk/gl2gx/source/gl.c&q=gxcurrentmaterialdiffusecolor%20package:http://gl2gx\.googlecode\.com&sa=N&cd=3&ct=rc&l=228
-
-
+	//*
 	GXLightObj lobj;
 	guVector lpos = {1.0f, 0.0f, 1.0f};
 
 	// Infinite position
-	guVecNormalize(&lpos);
-	lpos.x *= BIG_NUMBER;
+	//guVecNormalize(&lpos);
+	//lpos.x *= BIG_NUMBER;
 	lpos.y *= BIG_NUMBER;
-	lpos.z *= BIG_NUMBER;
+	//lpos.z *= BIG_NUMBER;
 	// Or just:
 	// guVector lpos = {BIG_NUMBER, 0.0f, BIG_NUMBER};
 
@@ -466,10 +470,8 @@ bool Level::init(u32 level){
 	/////////	
 	GX_SetFog(GX_FOG_LIN, 1.0f, 100.0f, 0.0f, 1.0f, fogColor);
 	//GX_SetFog(GX_FOG_NONE, 1.0f, 100.0f, 0.0f, 1.0f, fogColor);
+	//*/
 
-
-	// I don't think we want to render just yet.
-	//Render();
 	return true;
 }
 
@@ -499,46 +501,28 @@ void Level::clear(){
 //-----------------------------------------------------------------------------
 
 void Level::renderPlayer(Mtx view){
-	//--DCN: I guess we're not using the view matrix (set by the calling function "render()")
 
-	//fprintf(stderr, "[Pos] x: %f, y: %f, z: %f\n", player->pos.x, player->pos.y, player->pos.z);
-	//*
 	Mtx mv, rot;
-	
 	guMtxCopy(view, mv);
-	//guMtxIdentity(mv);
-	
 	guMtxTransApply(mv, mv, player->pos.x, player->pos.y, player->pos.z);
 
-	guMtxIdentity(rot);
-	guMtxRotDeg(rot, 'x', player->az);
-	guMtxRotDeg(rot, 'y', player->ay);
-	guMtxRotDeg(rot, 'z', player->az);
-
+	/*
+	// This is now down within the Player class
+	Mtx rotx, roty, rotz;
+	guMtxIdentity(rotx);
+	guMtxIdentity(roty);
+	guMtxIdentity(rotz);
+	guMtxRotDeg(rotx, 'x', -player->ax);
+	guMtxRotDeg(roty, 'y', player->az);
+	guMtxRotDeg(rotz, 'z', player->ay);
+	guMtxConcat(rotx, roty, rot);
+	guMtxConcat(rot, rotz, rot);
 	guMtxConcat(mv, rot, mv);
+	//*/
 
-	//guMtxConcat(rot, mv, mv);
+	guMtxConcat(mv, player->rotationMtx, mv);
 
 	player->model->render(mv);
-	//*/
-	// ENABLE FOG
-	//player->model->render();
-	// DISABLE FOG
-
-	/*
-	glPushMatrix();
-	glTranslatef( state->player->pos.x, state->player->pos.y, state->player->pos.z );
-	glRotatef( state->player->ax, 1.0f, 0.0f, 0.0f );
-	glRotatef( state->player->ay, 0.0f, 1.0f, 0.0f );
-	glRotatef( state->player->az, 0.0f, 0.0f, 1.0f );
-	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-	glEnable(GL_FOG);
-
-	state->player->model->render();
-
-	glDisable(GL_FOG);
-	glPopMatrix();
-	//*/
 }
 //
 void Level::renderBillBoards(Mtx view){
@@ -601,21 +585,97 @@ void Level::renderAsteroids(Mtx view){
 	num_asteroids = 0;
 	while(iterator != objectList->end()){
 		tempObject = static_cast<Object3D *>(*iterator);
-		//glLoadIdentity( );
+
 		if(tempObject->pos.z<(camera->pos.z) && tempObject->pos.z>(camera->pos.z-500)){
 
 			Mtx mv, rot;
-			guMtxCopy(view, mv);
 			//guMtxIdentity(mv);
-			guMtxTransApply(mv, mv, tempObject->pos.x, tempObject->pos.y, tempObject->pos.z );
+			guMtxCopy(view, mv);
+			
+			guMtxTransApply(mv, mv, tempObject->pos.x, tempObject->pos.y, tempObject->pos.z);
 
 			guMtxIdentity(rot);
-			guMtxRotDeg(rot, 'x', tempObject->az);
+			guMtxRotDeg(rot, 'x', tempObject->ax);
 			guMtxRotDeg(rot, 'y', tempObject->ay);
 			guMtxRotDeg(rot, 'z', tempObject->az);
 
 			guMtxConcat(mv, rot, mv);
-			tempObject->model->render(mv);
+
+			//tempObject->model->render(mv);
+
+			//*
+			GX_LoadPosMtxImm(mv, GX_PNMTX0);
+			//
+			GX_SetTevOp(GX_TEVSTAGE0,GX_MODULATE);
+			GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORDNULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+			//
+			GX_ClearVtxDesc();
+			GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
+			GX_SetVtxDesc(GX_VA_CLR0, GX_DIRECT);
+			// Why does this come out GREEN!?!?!
+            u8 r = 0x00;
+            u8 g = 0xff;
+            u8 b = 0xff;
+
+            GX_Begin(GX_QUADS, GX_VTXFMT_CLR, 24);          
+
+                    GX_Position3f32(-1.0f,1.0f,1.0f);       // Top Left of the quad (top)
+                    GX_Color4u8(r, g, b, 0xff);
+                    GX_Position3f32(1.0f,1.0f,1.0f);        // Top Right of the quad (top)
+                    GX_Color4u8(r, g, b, 0xff);
+                    GX_Position3f32(1.0f,1.0f,-1.0f);       // Bottom Right of the quad (top)
+                    GX_Color4u8(r, g, b, 0xff);
+                    GX_Position3f32(-1.0f,1.0f,-1.0f);      // Bottom Left of the quad (top)
+                    GX_Color4u8(r, g, b, 0xff);
+
+                    GX_Position3f32(-1.0f,-1.0f,1.0f);      // Top Left of the quad (bottom)
+                    GX_Color4u8(r, g, b, 0xff);
+                    GX_Position3f32(1.0f,-1.0f,1.0f);       // Top Right of the quad (bottom)
+                    GX_Color4u8(r, g, b, 0xff);
+                    GX_Position3f32(1.0f,-1.0f,-1.0f);      // Bottom Right of the quad (bottom)
+                    GX_Color4u8(r, g, b, 0xff);
+                    GX_Position3f32(-1.0f,-1.0f,-1.0f);     // Bottom Left of the quad (bottom)
+                    GX_Color4u8(r, g, b, 0xff);
+
+                    GX_Position3f32(-1.0f,1.0f,1.0f);       // Top Left of the quad (front)
+                    GX_Color4u8(r, g, b, 0xff);
+                    GX_Position3f32(-1.0f,-1.0f,1.0f);      // Top Right of the quad (front)
+                    GX_Color4u8(r, g, b, 0xff);
+                    GX_Position3f32(1.0f,-1.0f,1.0f);       // Bottom Right of the quad (front)
+                    GX_Color4u8(r, g, b, 0xff);
+                    GX_Position3f32(1.0f,1.0f,1.0f);        // Bottom Left of the quad (front)
+                    GX_Color4u8(r, g, b, 0xff);
+
+                    GX_Position3f32(-1.0f,1.0f,-1.0f);      // Top Left of the quad (back)
+                    GX_Color4u8(r, g, b, 0xff);
+                    GX_Position3f32(-1.0f,-1.0f,-1.0f);     // Top Right of the quad (back)
+                    GX_Color4u8(r, g, b, 0xff);
+                    GX_Position3f32(1.0f,-1.0f,-1.0f);      // Bottom Right of the quad (back)
+                    GX_Color4u8(r, g, b, 0xff);
+                    GX_Position3f32(1.0f,1.0f,-1.0f);       // Bottom Left of the quad (back)
+                    GX_Color4u8(r, g, b, 0xff);
+
+                    GX_Position3f32(-1.0f,1.0f,1.0f);       // Top Left of the quad (left)
+                    GX_Color4u8(r, g, b, 0xff);
+                    GX_Position3f32(-1.0f,1.0f,-1.0f);      // Top Right of the quad (back)
+                    GX_Color4u8(r, g, b, 0xff);
+                    GX_Position3f32(-1.0f,-1.0f,-1.0f);     // Bottom Right of the quad (back)
+                    GX_Color4u8(r, g, b, 0xff);
+                    GX_Position3f32(-1.0f,-1.0f,1.0f);      // Bottom Left of the quad (back)
+                    GX_Color4u8(r, g, b, 0xff);
+
+                    GX_Position3f32(1.0f,1.0f,1.0f);        // Top Left of the quad (right)
+                    GX_Color4u8(r, g, b, 0xff);
+                    GX_Position3f32(1.0f,1.0f,-1.0f);       // Top Right of the quad (right)
+                    GX_Color4u8(r, g, b, 0xff);
+                    GX_Position3f32(1.0f,-1.0f,-1.0f);      // Bottom Right of the quad (right)
+                    GX_Color4u8(r, g, b, 0xff);
+                    GX_Position3f32(1.0f,-1.0f,1.0f);       // Bottom Left of the quad (right)
+                    GX_Color4u8(r, g, b, 0xff);
+
+            GX_End();
+	        //*/
+
 
 			++num_asteroids;
 		}
@@ -651,7 +711,7 @@ void Level::renderShots(Mtx view){
 		guMtxTransApply(mv, mv, temp->pos.x, temp->pos.y, temp->pos.z );
 
 		guMtxIdentity(rot);
-		guMtxRotDeg(rot, 'x', temp->az);
+		guMtxRotDeg(rot, 'x', temp->ax);
 		guMtxRotDeg(rot, 'y', temp->ay);
 		guMtxRotDeg(rot, 'z', temp->az);
 
@@ -711,7 +771,7 @@ void Level::Render(){
 	guVector up = {camera->up.x, camera->up.y, camera->up.z};
 	
 	guLookAt(view, &pos, &up, &look);
-	GX_LoadPosMtxImm(view, GX_PNMTX0);	
+	
 	///////////////////////////////////////////
 
 	//--DCN: You know what would be CRAZY?!?!
@@ -730,19 +790,32 @@ void Level::Render(){
 	Mtx rot;		// Rotational matrix
 
 	// Translate
-	//guMtxIdentity(modelview);
 	guMtxCopy(view, modelview);
 	guMtxTransApply(modelview, modelview, player->pos.x, player->pos.y, player->pos.z);
 
 	// Rotate
-	guMtxIdentity(rot);
+	//
 
+	/*
+	guMtxIdentity(rot);
 	guMtxRotDeg(rot, 'x', player->ax);
 	guMtxRotDeg(rot, 'y', player->ay);
 	guMtxRotDeg(rot, 'z', player->az);
+	//*/
+	/*
+	Mtx rotx, roty, rotz;
+	guMtxIdentity(rotx);
+	guMtxIdentity(roty);
+	guMtxIdentity(rotz);
+	guMtxRotDeg(rotx, 'x', -player->ax);
+	guMtxRotDeg(roty, 'y', player->ay);
+	guMtxRotDeg(rotz, 'z', player->az);
+	guMtxConcat(rotx, roty, rot);
+	guMtxConcat(rot, rotz, rot);
+	//*/
 
 	// Combine the matrices
-	guMtxConcat(modelview, rot, modelview);
+	guMtxConcat(modelview, player->rotationMtx, modelview);
 
 	// Load the modelview matrix to be our position matrix
 	GX_LoadPosMtxImm(modelview, GX_PNMTX0);
@@ -758,6 +831,33 @@ void Level::Render(){
 		GX_Color4u8(0xff, 0xff, 0xff, 0xff);
 	GX_End();
 
+	// Draw Aiming reticule:
+
+	//*	
+	GX_SetVtxDesc(GX_VA_CLR0, GX_NONE);
+	GX_SetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+	// We are using textures
+	//GX_SetTevOp(GX_TEVSTAGE0, GX_REPLACE);
+	//GX_SetTexCoordGen(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY);//GX_TEXMTX0
+
+	GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
+	//GX_InvalidateTexAll();
+	GX_LoadTexObj(objectTextures->getTexture(3), GX_TEXMAP0);
+
+
+	GX_Begin(GX_QUADS, GX_VTXFMT_TEX, 4);
+
+		GX_Position3f32(-10.0f,10.0f,-100.0f);	// Top Left of the quad (back)
+		GX_TexCoord2f32(1.0f,0.0f);
+		GX_Position3f32(-10.0f,-10.0f,-100.0f);	// Top Right of the quad (back)
+		GX_TexCoord2f32(1.0f,1.0f);
+		GX_Position3f32(10.0f,-10.0f,-100.0f);	// Bottom Right of the quad (back)
+		GX_TexCoord2f32(0.0f,1.0f);
+		GX_Position3f32(10.0f,10.0f,-100.0f);		// Bottom Left of the quad (back)
+		GX_TexCoord2f32(0.0f,0.0f);
+
+	GX_End();
+	//*/
 	
 	//-------------------------
 
@@ -949,7 +1049,7 @@ void Level::Logic(){
 	player->move(speedFactor);
 
 	// Move down the path
-	/*
+	//*
 	player->pos.z -= 0.03f*speedFactor;
 	camera->pos.z  = player->pos.z+2.6f;
 	//*/

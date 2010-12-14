@@ -26,6 +26,15 @@
 
 #include <math.h>
 
+/*
+//--DCN: Wii-specific
+#include <ogcsys.h>
+#include <gccore.h>
+#include <gctypes.h>
+//*/
+
+
+
 struct Vector3D;
 struct Matrix3;
 struct Matrix3D;

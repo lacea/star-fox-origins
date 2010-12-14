@@ -42,9 +42,9 @@
 #include "paths.h"
 #include "font.h"
 #include "Model.h"
-#include "CTexture.h"
+#include "TextureMgr.h"
 #include "Buttons.h"
-#include "player.h"
+#include "Player.h"
 #include "math.h"
 #include "object3D.h"
 #include "gameState.h"
@@ -114,7 +114,7 @@ private:
     Camera* camera;
 
     // Texture manager
-    CTexture* objectTextures;
+    TextureMgr* objectTextures;
 
     // List of 3D Models
     ModelList* modelList;

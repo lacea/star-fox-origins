@@ -113,6 +113,7 @@ public:
   bool intersect(const Vector3D& O, float radius, Vector3D& cp);
 
   Vector3D v1,v2,v3;
+  //guVector v1,v2,v3;
   Vector3D center;
 };
 

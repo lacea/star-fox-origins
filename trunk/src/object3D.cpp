@@ -49,3 +49,49 @@ Object3D::Object3D(Model * mdl) : BaseObject(0.0f, 0.0f, 0.0f),
 	//
 }
 //*/
+
+/*
+//---------------------------
+// ObjectList
+
+Object3DList::Object3DList(){}
+
+Object3DList::~Object3DList(){
+    while(!vector.empty()){
+        if(vector.back())
+        	delete vector.back();
+        vector.pop_back();
+    }
+}
+
+void Object3DList::push(Object3D * object){
+	vector.push_back(object);
+}
+
+void Object3DList::clear(){
+    while(!vector.empty()){
+        if(vector.back())
+        	delete vector.back();
+        vector.pop_back();
+    }
+}
+
+int Object3DList::getCount(){
+	return vector.size();
+}
+
+object3DIterator Object3DList::begin(){
+    return vector.begin();
+}
+
+object3DIterator Object3DList::end(){
+    return vector.end();
+}
+
+object3DIterator Object3DList::erase(object3DIterator iterator){
+    if(*iterator)
+        delete *iterator;
+    return vector.erase(iterator);
+}
+
+//*/

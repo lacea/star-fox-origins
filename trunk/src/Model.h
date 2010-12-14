@@ -31,41 +31,43 @@
 #ifndef __MODEL_H__
 #define __MODEL_H__
 
-
 #include "StdInc.h"
-#include "coldet/coldetimpl.h"
+
 #include <vector>
 #include <string>
 #include <cmath>
 #include <cstring>
-#include "paths.h"
-
-#include "xml/tinyxml/tinyxml.h"
-
 #include <malloc.h>
-
+#include "paths.h"
+#include "TextureMgr.h"
+#include "xml/tinyxml/tinyxml.h"
+#include "coldet/coldetimpl.h"
 
 // The maximum size in characters that the name can be.
 #define MAX_MODEL_NAME_LENGTH 24
 
-
 #define MODEL_FORMAT_VERSION 4
 
+// Temporary display list size (really big to fit everything in)
+static const u32 TEMP_DISPLIST_SIZE = 32768;
+
 struct modelVertex{
-	/*	
-	guVector v;			// Vertex
-	guVector n;			// Normal
+	//*	
+	guVector v;			// Vertex (x,y,z) component
+	guVector n;			// Vertex normal
 	//*/
+	/*
     f32 v[3];				// (x,y,z) component
     f32 n[3];				// Vertex normal
+	//*/
 	
 };
 
 struct modelFace{
-    int v[3];				// 3 vertices used for this face
+    s32 v[3];				// 3 vertices used for this face
     f32 uv[6];				// uv texture coords. 
-	u8 c[9];				// Color components for the 3 vertices
-	u8 tIndex;				// Texture index for the face
+	u8  c[9];				// Color components for the 3 vertices
+	s8  tIndex;				// Texture index for the face
 };
 
 
@@ -76,16 +78,14 @@ public:
 	Model();
 	Model(const char* modelName, bool buildCollisionModel = false);
 	~Model();
-	//u32 getTextureId(int texture);
-	//void setTextureId(u32 textureId, int texture);
+
 	void deleteTexture(int texture);
 	void render(Mtx modelview);
-	int getNumberOfVertices(){return num_verts;};
-	int getNumberOfFaces(){return num_faces;};
-	int getNumberOfTextureIds(){return num_textures;};
-	const char * getName(){return name;};
-	//const char * getFileName(){return filename;};
-	//char **getTextureNames(){return textureNames;};
+	s32 getNumberOfVertices(){return num_verts;};
+	s32 getNumberOfFaces(){return num_faces;};
+	s32 getNumberOfTextureIds(){return num_textures;};
+	const char* getName(){return name;};
+
 	bool loadModel(const char* fileName, bool buildCollisionModel = false);
 	
 	
@@ -103,23 +103,20 @@ private:
     f32 x,y,z;					// Location
     f32 ax,ay,az;				// Angles of rotation
     f32 sizeX, sizeY, sizeZ;	// Size
-    int num_verts;				// Number of vertices in the model
-    int num_faces;				// Number of faces in the model
+    s32 num_verts;				// Number of vertices in the model
+    s32 num_faces;				// Number of faces in the model
 
 	// Textures
+	//TODO: Make everything load into the texture manager, maybe?
     GXTexObj* textureObjs;
-	// Not sure this is needed:
-	//char **textureNames;
     u16 num_textures;
 
-	//--DCN: Going to leave this out
-	//char filename[256];
 	char name[MAX_MODEL_NAME_LENGTH];
 	
     
     void buildDisplayList();
-    void loadTGATexture(const char *texture, GXTexObj& textureId);
-    int untexturedFaces();
+    void loadInTexture(const char *texture, GXTexObj& textureId);
+    s32 untexturedFaces();
 
 };
 

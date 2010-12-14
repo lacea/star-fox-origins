@@ -20,20 +20,22 @@
 #define __SF_FONT__
 
 #include "StdInc.h"
+#include "TextureMgr.h"
+
 #include <cstdarg>
 
 #include <malloc.h>
 
-/*
+//*
 class Font{
 
 public:
 
-	Font();  // InitFontSystem
-	~Font(); // KillFontSystem
+	Font();
+	~Font();
 
-	int Load(char * fileName, GXTexObj &image);
-	void Print(int set ,s32 x, s32 y, f32 scalex, f32 scaley, char *fmt, ...);
+	bool Load(const char* fileName, GXTexObj &textureObj);
+	void Print(s32 set, s32 x, s32 y, f32 scalex, f32 scaley, char *fmt, ...);
 
 private:
 
@@ -44,14 +46,14 @@ private:
 	// seeing as how it's just one letter per Display List.
 	u32 actualDLsize;
 
-}
+};
 //*/
 
+/*
 void InitFontSystem();
 void KillFontSystem();
-int LoadFont(char * fileName, GXTexObj &image);
+bool LoadFont(const char* fileName, GXTexObj &textureObj);
 void PrintText(int set ,s32 x, s32 y, f32 scalex, f32 scaley, char *fmt, ...);
-
-//extern u32      font;
+//*/
 
 #endif
