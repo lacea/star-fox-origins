@@ -108,8 +108,8 @@ Font::~Font(){
 }
 
 
-bool Font::Load(const char* fileName, GXTexObj &textureObj){
-	return LoadTexture(fileName, textureObj);
+bool Font::Load(const char* fileName, Texture& texture){
+	return LoadTexture(fileName, texture);
 }
 
 void Font::Print(int set, s32 x, s32 y, f32 scalex, f32 scaley, char *fmt, ...){

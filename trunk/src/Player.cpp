@@ -16,19 +16,14 @@
     along with StarFox Origins.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
-#define NEW_WII_MOVEMENT
-
-
 #include "Player.h"
 
 Player::Player(Buttons *btns){
-	pos = a3dssVector3();
+	//pos = a3dssVector3();
 	//GX way:
-	//pos.x = 0; pos.y = 0; pos.z = 0;
+	pos.x = 0; pos.y = 0; pos.z = 0;
 
 	ax = ay = az = 0.0f;
-	oldax = olday = oldaz = 0.0f;
 	dx = dy = dz = 0.0f;
 	mSparkState = lSparkState = rSparkState = 0.0f;
 
@@ -41,24 +36,23 @@ Player::Player(Buttons *btns){
 }
 
 Player::Player(Buttons *btns, f32 x, f32 y, f32 z){
-    pos = a3dssVector3(x,y,z);
+	//pos = a3dssVector3(x,y,z);
 	//GX way:
-	//pos.x = x; pos.y = y; pos.z = z;
-    ax = ay = az = 0.0f;
-	oldax = olday = oldaz = 0.0f;
-    dx = dy = dz = 0.0f;
-    mSparkState = lSparkState = rSparkState = 0.0f;
+	pos.x = x; pos.y = y; pos.z = z;
+	ax = ay = az = 0.0f;
+	dx = dy = dz = 0.0f;
+	mSparkState = lSparkState = rSparkState = 0.0f;
 
 	guMtxIdentity(rotationMtx);
-    //rMatrix = a3dssMatrix3(ax,ay,az);
+	//rMatrix = a3dssMatrix3(ax,ay,az);
 
-    lives = bombs = 3;
-    shield = 1.0f;
-    this->btns = btns;
+	lives = bombs = 3;
+	shield = 1.0f;
+	this->btns = btns;
 }
 
 Player::~Player(){
-    clear();
+	clear();
 }
 
 void Player::move(float sfactor){
@@ -70,20 +64,10 @@ void Player::move(float sfactor){
 	// Rotation about the z-axis: yaw
 
 
-
-
 	// Smooth out the rotations
-
-	/*
-	stick._x += (_xmouse-stick._x)/6;
-	stick._y += (_ymouse-stick._y)/6;
-	stick._rotation = (_xmouse-stick._x)/6;
-	//*/
-
-
 	static const f32 ROTATION_THRESHOLD = 3.0f;
 	static const f32 ROTATION_CORRECTION = 0.2f;	
-	
+
 	f32 tmpax = orient.roll;
 	f32 tmpay = orient.pitch;
 	f32 tmpaz = orient.yaw; 
@@ -122,53 +106,23 @@ void Player::move(float sfactor){
 
 	//*/
 
-	/*
-	ax = orient.roll;
-	ay = orient.pitch;
-	az = orient.yaw;
-
-	f32 dax = 0, day = 0, daz = 0;
-	f32 tmpdax = ax - oldax;
-	if(tmpdax > ROTATION_THRESHOLD || tmpdax < -ROTATION_THRESHOLD){
-		dax = tmpdax * 0.5f;
-		oldax += dax * ROTATION_CORRECTION;
-	}
-	ax += dax;
-
-	f32 tmpday = ay - olday;
-	if(tmpday > ROTATION_THRESHOLD || tmpday < -ROTATION_THRESHOLD){
-		day = tmpday * 0.5f;
-		olday += day * ROTATION_CORRECTION;
-	}
-	ay += day;
-
-	f32 tmpdaz = az - oldaz;
-	if(tmpdaz > ROTATION_THRESHOLD || tmpdaz < -ROTATION_THRESHOLD){
-		daz = tmpdaz * 0.5f;
-		oldaz += daz * ROTATION_CORRECTION;
-	}
-	az += daz;
-
-	//*/
-	/////////////////////////////
-
 	dy = ax * (MAX_Y_SPEED/MAX_X_ROT);
 	dx = ay * (MAX_X_SPEED);
 
 	// Update position
-    pos.x -= dx * sfactor;
-    pos.y -= dy * sfactor;
-    
-    if (pos.x > MAX_X) pos.x = MAX_X;
-    else if (pos.x < -MAX_X) pos.x = -MAX_X;
-    if (pos.y > MAX_Y) pos.y = MAX_Y;
-    else if (pos.y < -MAX_Y) pos.y = -MAX_Y;    
-    
-    update();
+	pos.x -= dx * sfactor;
+	pos.y -= dy * sfactor;
+
+	if (pos.x > MAX_X) pos.x = MAX_X;
+	else if (pos.x < -MAX_X) pos.x = -MAX_X;
+	if (pos.y > MAX_Y) pos.y = MAX_Y;
+	else if (pos.y < -MAX_Y) pos.y = -MAX_Y;    
+
+	update();
 }
 
 void Player::update(){
-    //rMatrix.fromEuler(ax, ay, az);   //update the rotation matrix
+	//rMatrix.fromEuler(ax, ay, az);   //update the rotation matrix
 	Mtx rotx, roty, rotz;
 	guMtxIdentity(rotx);
 	guMtxIdentity(roty);
@@ -184,17 +138,17 @@ void Player::update(){
 
 void Player::clear(){
 
-    pos.x = pos.y = pos.z = 0.0f;
-    ax = ay = az = 0.0f;
-	oldax = olday = oldaz = 0.0f;
-    dx = dy = dz = 0.0f;
+	pos.x = pos.y = pos.z = 0.0f;
+	ax = ay = az = 0.0f;
+	//oldax = olday = oldaz = 0.0f;
+	dx = dy = dz = 0.0f;
 
 	guMtxIdentity(rotationMtx);
 
-    mSparkState = lSparkState = rSparkState = 0;
-    lives = bombs = 3;
-    shield = 1.0f;
-    //only clear model pointer.
-    //Model is deleted by ModelList's destructor.
-    model = NULL;
+	mSparkState = lSparkState = rSparkState = 0;
+	lives = bombs = 3;
+	shield = 1.0f;
+	// Only clear the model pointer.
+	// Model is deleted by ModelList's destructor.
+	model = NULL;
 }
