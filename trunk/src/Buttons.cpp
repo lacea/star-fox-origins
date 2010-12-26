@@ -18,6 +18,8 @@
 
 #include "Buttons.h"
 
+// TODO: I don't like having so many variables. 
+// We can probably cut half of these.
 Buttons::Buttons(){
     bup         = WPAD_BUTTON_UP;
     bdown       = WPAD_BUTTON_DOWN;
@@ -46,39 +48,16 @@ void Buttons::update(){
 	// WPAD_ScanPads() has been called already
 	u32 btnDown = WPAD_ButtonsDown(0);
 
-	/*
-	left  = (btnDown & kleft)  ? true : false;
-	right = (btnDown & kright) ? true : false;
-	up    = (btnDown & kup)    ? true : false;
-	down  = (btnDown & kdown)  ? true : false;
-	//*/
-
 	shot  = (btnDown & bshot)  ? true : false;
 	bomb  = (btnDown & bbomb)  ? true : false;
 	speedUp  = (btnDown & bspeedUp)  ? true : false;
 	speedDown  = (btnDown & bspeedDown)  ? true : false;
-
-	/*
-    if(keyState[kleft]) left = true; else left = false;
-    if(keyState[kright]) right = true; else right = false;
-    if(keyState[kup]) up = true; else up = false;
-    if(keyState[kdown]) down = true; else down = false;
-    if(keyState[kshot]) shot = true; else shot = false;
-    if(keyState[SDLK_ESCAPE]) quit = true;
-	//*/
 }
 
 void Buttons::change(int index, s32 newBtn){
-    //change keys
     switch (index){
-		/*
-        case CHANGE_BTN_UP: bup = newKey; break;
-        case CHANGE_BTN_DOWN: bdown = newKey; break;
-        case CHANGE_BTN_LEFT: bleft = newKey; break;
-        case CHANGE_BTN_RIGHT: bright = newKey; break;
-		//*/
-        case CHANGE_BTN_SHOT: bshot = newBtn; break;
-        case CHANGE_BTN_BOMB: bbomb = newBtn; break;
+        case CHANGE_BTN_SHOT:  bshot = newBtn; break;
+        case CHANGE_BTN_BOMB:  bbomb = newBtn; break;
         case CHANGE_BTN_BOOST: bspeedUp = newBtn; break;
         case CHANGE_BTN_BREAK: bspeedDown = newBtn; break;
 		default: break;

@@ -39,9 +39,6 @@
 Model::Model(): collisionModel(NULL),
 				vList(NULL), fList(NULL), 
 				displayList(NULL), actualDLsize(0), 
-				x(0.0f), y(0.0f), z(0.0f),
-				ax(0.0f), ay(0.0f), az(0.0f),
-				sizeX(0.0f), sizeY(0.0f), sizeZ(0.0f),
 				num_verts(0), num_faces(0),
 				textureObjs(NULL), 
 				num_textures(0)
@@ -63,9 +60,6 @@ Model::Model(const char * fileName, bool buildCollisionModel):
 				collisionModel(NULL),
 				vList(NULL), fList(NULL), 
 				displayList(NULL), actualDLsize(0), 
-				x(0.0f), y(0.0f), z(0.0f),
-				ax(0.0f), ay(0.0f), az(0.0f),
-				sizeX(0.0f), sizeY(0.0f), sizeZ(0.0f),
 				num_verts(0), num_faces(0),
 				textureObjs(NULL), 
 				num_textures(0)
@@ -154,17 +148,17 @@ bool Model::loadModel(const char* modelName,  bool buildCollisionModel){
 	num_textures = atoi(node.Element()->Attribute("num"));
 
 	if (num_textures > 0){
-		textureObjs = new GXTexObj[num_textures];
-		std::string texture;
+		textureObjs = new Texture[num_textures];
+		std::string texturePath;
 
 		for (u16 i = 0; i < num_textures; i++){
 
 			TiXmlNode* texNode = model.FirstChild("textures").Child("name", i).Element();
-			texture = PATH_TEXTURES;	
-			texture += texNode->FirstChild()->Value();
+			texturePath = PATH_TEXTURES;	
+			texturePath += texNode->FirstChild()->Value();
 
 			// Load the texture!
-			loadInTexture(texture.c_str(), textureObjs[i]);  
+			loadInTexture(texturePath.c_str(), textureObjs[i]);  
 		}
 	}
 
@@ -359,8 +353,9 @@ void Model::buildDisplayList(){
 	//--DCN: Might need to get rid of this one entirely,
 	// or something else, because I'm not sure we're allowed
 	// to do a "clearVtxDesc()" and such inside a display list.
-	// Render the untextured faces
+
 	//*
+	// Render the untextured faces
 	if (unTexFaces > 0){
 
 		//
@@ -393,8 +388,6 @@ void Model::buildDisplayList(){
 		GX_End();
 
 	}
-	//*/
-	//*
 	// Render the textured faces
 	if ((num_faces - unTexFaces) > 0){
 		j = unTexFaces;
@@ -413,7 +406,8 @@ void Model::buildDisplayList(){
 		// It's going by the textures, we can't use trianglefans.
 		for (s32 i = 0; i< num_textures; ++i){
 
-			GX_LoadTexObj(&textureObjs[i], GX_TEXMAP0);
+			//--DCN: Maybe have two arrays, one of data objects, one of GXTexObjs
+			GX_LoadTexObj(&textureObjs[i].obj, GX_TEXMAP0);
 
 			while(fList[j].tIndex == i && j < num_faces){
 
@@ -488,8 +482,8 @@ void Model::buildDisplayList(){
 //
 //----------------------------------------
 
-void Model::loadInTexture(const char *fileName, GXTexObj& textureObj){
-	LoadTexture(fileName, textureObj);
+void Model::loadInTexture(const char *fileName, Texture& texture){
+	LoadTexture(fileName, texture);
 }
 
 //----------------------------------------
@@ -507,53 +501,17 @@ void Model::loadInTexture(const char *fileName, GXTexObj& textureObj){
 
 void Model::render(Mtx modelview){
 
-	/*
-	Mtx modelview;
-
-	// Rotate
-	guMtxIdentity(modelview);
-	guMtxRotDeg(modelview, 'x', az);
-	guMtxRotDeg(modelview, 'y', ay);
-	guMtxRotDeg(modelview, 'z', az);
-	//guMtxConcat(modelview, rot, modelview);
-
-	//Translate
-	// Maybe this needs to be 
-	guMtxTrans(modelview, x, y, z);
-	//guMtxTransApply(modelview, modelview, x, y, z);
-	//*/
-	/*
-	Mtx rot, modelview;
-
-	// Rotate
-	guMtxIdentity(rot);
-	guMtxRotDeg(rot, 'x', az);
-	guMtxRotDeg(rot, 'y', ay);
-	guMtxRotDeg(rot, 'z', az);
-	
-	//Translate
-	guMtxIdentity(modelview);
-	// Maybe this needs to be 
-	//guMtxTrans(modelview, x, y, z);
-	guMtxTransApply(modelview, modelview, x, y, z);	
-	guMtxConcat(modelview, rot, modelview);
-	//*/
-
 	GX_LoadPosMtxImm(modelview, GX_PNMTX0);
 
-	Mtx tempMtx, normMtx, texMtx;
-
-	guMtxInverse(modelview, tempMtx);
-    guMtxTranspose(tempMtx, normMtx);
+	Mtx normMtx;
+	//guMtxInverse(modelview, tempMtx);
+    //guMtxTranspose(tempMtx, normMtx);
+	guMtxInvXpose(modelview, normMtx);
 	GX_LoadNrmMtxImm(normMtx, GX_PNMTX0);
 
-	// Should we put something else here?
-	/*
-	guMtxIdentity(texMtx);
-	GX_LoadTexMtxImm(texMtx, GX_PNMTX0);
-	//*/
-
+	//--DCN: This is where the problem happens with asteroid:
 	GX_CallDispList(displayList, actualDLsize);
+
 
 }
 
@@ -588,7 +546,7 @@ void ModelList::clear(){
 
 Model* ModelList::getModel(s32 index){
 	if (u32(index) >= list.size())
-		return 0;
+		return NULL;
 	return list.at(index);
 }
 

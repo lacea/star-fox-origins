@@ -24,7 +24,21 @@
 #include <malloc.h>
 #include "libpng/pngu/pngu.h"
 
-bool LoadTexture(const char* fileName, GXTexObj &textureObj);
+class Texture{
+
+public:
+	Texture(){data = NULL;}
+	~Texture(){
+		if(data) 
+			free(data);
+		data = NULL;
+	}
+
+	GXTexObj obj; // Texture object
+	u8* data;     // Actual texture data
+};
+
+bool LoadTexture(const char* fileName, Texture &texture);
 
 class TextureMgr{
 
@@ -39,7 +53,7 @@ public:
 
 private:
 
-	std::vector<GXTexObj*> vTexture;
+	std::vector<Texture*> vTexture;
 };
 
 #endif //TEXTURE_H

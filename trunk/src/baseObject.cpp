@@ -24,10 +24,10 @@ BaseObject::BaseObject(){
     destroyable = true;
 }
 
-BaseObject::BaseObject(float x, float y, float z){
-	this->pos.x = x;
-	this->pos.y = y;
-    this->pos.z = z;
+BaseObject::BaseObject(f32 x, f32 y, f32 z){
+	pos.x = x;
+	pos.y = y;
+    pos.z = z;
     active = true;
     destroyable = true;
 }

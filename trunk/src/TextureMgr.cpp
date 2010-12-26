@@ -27,17 +27,12 @@
 // @pre     -
 // @post    The texture has been loaded from the file
 // @param   fileName: the file to load
-// @param   textureObj: the texture object to populate
+// @param   texture: the Texture struct to populate
 // @return  true if successful, false if not
 //
 //----------------------------------------
 
-bool LoadTexture(const char* fileName, GXTexObj &textureObj){  
-	// Having it load in the texture data and then destroy said data
-	// is okay for now. But what about in the future? What if we need
-	// to change the texture in any way?
-
-	u8* texture_data = NULL;
+bool LoadTexture(const char* fileName, Texture &texture){
 
 	// Open the PNG
 	FILE *file = fopen(fileName, "rb");
@@ -52,21 +47,25 @@ bool LoadTexture(const char* fileName, GXTexObj &textureObj){
 	rewind(file);
 
 	u8* tempData = (u8*)(memalign(32, imageSize));
-	
-	s32 width;
-	s32 height;
+	if(!tempData){
+		fprintf(stderr, "Couldn't allocate data for a texture\n");
+		return false;
+	}
 
 	fread(tempData, 1, imageSize, file);
 
-	texture_data = DecodePNG(tempData, &width, &height, NULL, 0,0);
+	s32 width;
+	s32 height;
 
-	GX_InitTexObj(&textureObj, texture_data, width, height, GX_TF_RGBA8, GX_CLAMP, GX_CLAMP, GX_FALSE);
+	texture.data = DecodePNG(tempData, &width, &height, NULL, 0,0);
+
+	GX_InitTexObj(&texture.obj, texture.data, width, height, GX_TF_RGBA8, GX_CLAMP, GX_CLAMP, GX_FALSE);
 
 	free(tempData);
-	free(texture_data);
 	fclose(file);
 
 	return true;
+
 }
 
 //----------------------------------------
@@ -111,11 +110,14 @@ TextureMgr::~TextureMgr(){
 
 bool TextureMgr::pushTexture(const char* fileName){
 
-	GXTexObj* textureObj = new GXTexObj;
-	LoadTexture(fileName, *textureObj);
-	vTexture.push_back(textureObj);
+	Texture* texture = new Texture;
+	bool loaded = LoadTexture(fileName, *texture);
+	
+	if(loaded){
+		vTexture.push_back(texture);
+	}
 
-	return true;
+	return loaded;
 	
 }
 
@@ -137,12 +139,12 @@ GXTexObj* TextureMgr::getTexture(s32 index){
 	if (u32(index) >= vTexture.size())
         return NULL;
 
-    return vTexture.at(index);
+    return &(vTexture.at(index)->obj);
 }
 
 //----------------------------------------
 //
-// Function: size [NOT IN USE]
+// Function: size
 //
 //		Get the size of our texture vector
 //

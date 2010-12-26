@@ -61,7 +61,7 @@ DisplayList::DisplayList():
 //----------------------------------------
 
 DisplayList::DisplayList(const DisplayList* dl, u32 newSize):
-		_size((newSize + 31)&~31){    // Display lists need to be at least 32 bytes more than needed
+		_size(newSize){ 
 
 	_list = (u8*)(memalign(32, _size));
 

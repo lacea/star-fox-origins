@@ -27,13 +27,15 @@ PlayerShot::PlayerShot() : BaseObject(0.0f, 0.0f, 0.0f){
     prevPos.x = prevPos.y = prevPos.z = 0.0f;
     ax = ay = az = 0.0f;
     model = 0;
+	guMtxIdentity(rotationMtx);
 }
 
-PlayerShot::PlayerShot(float x, float y, float z) : BaseObject(x, y, z){
+PlayerShot::PlayerShot(f32 x, f32 y, f32 z) : BaseObject(x, y, z){
     direction.x = direction.y = 0.0f; direction.z = -1.0f;
     prevPos.x = prevPos.y = prevPos.z = 0.0f;
     ax = ay = az= 0.0f;
     model = 0;
+	guMtxIdentity(rotationMtx);
 }
 
 PlayerShot::PlayerShot(Model * model) : BaseObject(0.0f, 0.0f, 0.0f){
@@ -41,11 +43,13 @@ PlayerShot::PlayerShot(Model * model) : BaseObject(0.0f, 0.0f, 0.0f){
     prevPos.x = prevPos.y = prevPos.z = 0.0f;
     ax = ay = az = 0.0f;
     this->model = model;
+	guMtxIdentity(rotationMtx);
 }
 
-PlayerShot::PlayerShot(Model * model, float x, float y, float z) : BaseObject(x, y, z){
+PlayerShot::PlayerShot(Model * model, f32 x, f32 y, f32 z) : BaseObject(x, y, z){
     direction.x = direction.y = 0.0f; direction.z = -1.0f;
     prevPos.x = prevPos.y = prevPos.z = 0.0f;
     ax = ay = az = 0.0f;
     this->model = model;
+	guMtxIdentity(rotationMtx);
 }

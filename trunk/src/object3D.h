@@ -25,17 +25,17 @@
 class Object3D : public BaseObject{
 
 public:
-	float ax,ay,az;		// Angle rotation
-	float dx,dy,dz;		// Delta aceleration
-	float health;		// Health
-	Model* model;		// 3D model
+
+	f32 ax,ay,az;       // Angle rotation
+	f32 dx,dy,dz;       // Delta aceleration
+	f32 health;         // Health
+	Model* model;       // 3D model
 
 	Object3D();
-	//Object3D(float x, float y, float z);
+	//Object3D(f32 x, f32 y, f32 z);
 	Object3D(Model* mdl);
-	//Object3D(Model* mdl, float x, float y, float z);
+	//Object3D(Model* mdl, f32 x, f32 y, f32 z);
 };
-
 
 /*
 // From BaseObject
@@ -43,19 +43,14 @@ public:
 //Define an iterator for select objects from the list
 typedef std::list<Object3D* >::iterator object3DIterator;
 
-// Typedef for the Compare Function used for sort.
-typedef int (*cmp3D)(const void *, const void *);
-
 class Object3DList{
-	void QSort(int l, int r);
-    cmp3D Compare;   //compare function for sort
+
 public:
     std::list<Object3D *> vector;
     
     Object3DList();
     ~Object3DList();
     void push(Object3D*);
-    int sort(int (*compareFunction)(const void*, const void*));
     void clear();
     int getCount();
     object3DIterator begin();
