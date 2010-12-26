@@ -45,12 +45,10 @@ class Player : public BaseObject{
 
 public:
 	Mtx rotationMtx;
-	//a3dssMatrix3 rMatrix;
 	Buttons *btns;
 	Model *model;
 	
 	f32 ax, ay, az;
-	f32 oldax, olday, oldaz;
 	f32 dx, dy, dz;
 	f32 shield;
 	f32 mSparkState;

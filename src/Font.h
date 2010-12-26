@@ -34,7 +34,8 @@ public:
 	Font();
 	~Font();
 
-	bool Load(const char* fileName, GXTexObj &textureObj);
+	bool Load(const char* fileName, Texture& texture);
+	//bool Load(const char* fileName, GXTexObj& textureObj);
 	void Print(s32 set, s32 x, s32 y, f32 scalex, f32 scaley, char *fmt, ...);
 
 private:
