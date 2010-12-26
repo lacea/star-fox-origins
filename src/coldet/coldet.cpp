@@ -258,6 +258,99 @@ bool CollisionModel3DImpl::rayCollision(float origin[3],
   return false;
 }
 
+
+
+//--DCN:
+
+bool CollisionModel3DImpl::rayCollision(guVector _origin, 
+                                        guVector _direction,
+                                        bool closest,
+                                        float segmin, 
+                                        float segmax)
+{
+
+	//--DCN: We're going to trick it for now; we'll make it better later
+
+	float origin[3] = {_origin.x, _origin.y, _origin.z};
+	float direction[3] = {_direction.x, _direction.y, _direction.z};
+
+  float mintparm=9e9f,tparm;
+  Vector3D col_point;
+  m_ColType=Ray;
+  Vector3D O;
+  Vector3D D;
+  if (m_Static)
+  {
+    O=Transform(*(Vector3D*)origin,m_InvTransform);
+    D=rotateVector(*(Vector3D*)direction,m_InvTransform);
+  }
+  else
+  {
+    Matrix3D inv=m_Transform.Inverse();
+    O=Transform(*(Vector3D*)origin,inv);
+    D=rotateVector(*(Vector3D*)direction,inv);
+  }
+  if (segmin!=0.0f) // normalize ray
+  {
+    O+=segmin*D;
+    segmax-=segmin;
+    segmin=0.0f;
+  }
+  if (segmax<segmin) 
+  {
+    D=-D;
+    segmax=-segmax;
+  }
+  std::vector<BoxTreeNode*> checks;
+  checks.push_back(&m_Root);
+  while (!checks.empty())
+  {
+    BoxTreeNode* b=checks.back();
+    checks.pop_back();
+    if (b->intersect(O,D,segmax))
+    {
+      int sons=b->getSonsNumber();
+      if (sons)
+        while (sons--) checks.push_back(b->getSon(sons));
+      else
+      {
+        int tri=b->getTrianglesNumber();
+        while (tri--)
+        {
+          BoxedTriangle* bt=b->getTriangle(tri);
+          Triangle* t=static_cast<Triangle*>(bt);
+          if (t->intersect(O,D,col_point,tparm,segmax)) 
+          {
+            if (closest)
+            {
+              if (tparm<mintparm)
+              {
+                mintparm=tparm;
+                m_ColTri1=*bt;
+                m_iColTri1=getTriangleIndex(bt);
+                m_ColPoint=col_point;
+              }
+            }
+            else
+            {
+              m_ColTri1=*bt;
+              m_iColTri1=getTriangleIndex(bt);
+              m_ColPoint=col_point;
+              return true;
+            }
+          }
+        }
+      }
+    }
+  }
+  if (closest && mintparm<9e9f) return true;
+  return false;
+}
+
+
+
+
+
 bool CollisionModel3DImpl::sphereCollision(float origin[3], float radius)
 {
   m_ColType=Sphere;

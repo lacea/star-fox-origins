@@ -25,6 +25,7 @@
 #ifndef H_COLDET_IMPL
 #define H_COLDET_IMPL
 
+#include "../StdInc.h"
 #include "coldet.h"
 #include "box.h"
 #include "math3d.h"
@@ -33,76 +34,80 @@
 class CollisionModel3DImpl : public CollisionModel3D
 {
 public:
-  CollisionModel3DImpl(bool Static);
-  void setTriangleNumber(int num) { if (!m_Final) m_Triangles.reserve(num); }
+	CollisionModel3DImpl(bool Static);
+	void setTriangleNumber(int num) { if (!m_Final) m_Triangles.reserve(num); }
 
-  void addTriangle(float x1, float y1, float z1,
-                   float x2, float y2, float z2,
-                   float x3, float y3, float z3)
-  {
-    addTriangle(Vector3D(x1,y1,z1),
-                Vector3D(x2,y2,z2),
-                Vector3D(x3,y3,z3));
-  }
-  void addTriangle(float v1[3], float v2[3], float v3[3])
-  {
-    addTriangle(Vector3D(v1[0],v1[1],v1[2]),
-                Vector3D(v2[0],v2[1],v2[2]),
-                Vector3D(v3[0],v3[1],v3[2]));
-  }
-  
-  //--DCN: Wii-specific
-  //void addTriangle(const guVector& v1, const guVector& v2, const guVector& v3);
-  
-  void addTriangle(const Vector3D& v1, const Vector3D& v2, const Vector3D& v3);
-  void finalize();
+	void addTriangle(float x1, float y1, float z1,
+				   float x2, float y2, float z2,
+				   float x3, float y3, float z3)
+	{
+	addTriangle(Vector3D(x1,y1,z1),
+				Vector3D(x2,y2,z2),
+				Vector3D(x3,y3,z3));
+	}
+	void addTriangle(float v1[3], float v2[3], float v3[3])
+	{
+	addTriangle(Vector3D(v1[0],v1[1],v1[2]),
+				Vector3D(v2[0],v2[1],v2[2]),
+				Vector3D(v3[0],v3[1],v3[2]));
+	}
 
-  void setTransform(float m[16]) { setTransform(*(Matrix3D*)m); }
-  void setTransform(const Matrix3D& m);
+	//--DCN: Wii-specific
+	//void addTriangle(const guVector& v1, const guVector& v2, const guVector& v3);
 
-  bool collision(CollisionModel3D* other, 
-                 int AccuracyDepth, 
-                 int MaxProcessingTime,
-                 float* other_transform);
+	void addTriangle(const Vector3D& v1, const Vector3D& v2, const Vector3D& v3);
+	void finalize();
 
-  bool rayCollision(float origin[3], float direction[3], bool closest,
-                    float segmin, float segmax);
-  bool sphereCollision(float origin[3], float radius);
+	void setTransform(float m[16]) { setTransform(*(Matrix3D*)m); }
+	void setTransform(const Matrix3D& m);
 
-  bool getCollidingTriangles(float t1[9], float t2[9], bool ModelSpace);
-  bool getCollidingTriangles(int& t1, int& t2);
-  bool getCollisionPoint(float p[3], bool ModelSpace);
+	bool collision(CollisionModel3D* other, 
+				 int AccuracyDepth, 
+				 int MaxProcessingTime,
+				 float* other_transform);
+
+	bool rayCollision(float origin[3], float direction[3], bool closest,
+					float segmin, float segmax);
+	//--DCN:
+	bool rayCollision(guVector _origin, guVector _direction, bool closest,
+					float segmin, float segmax);
 
 
-  int getTriangleIndex(BoxedTriangle* bt)
-  {
-    return int(bt-&*m_Triangles.begin());
-  }
+	bool sphereCollision(float origin[3], float radius);
 
-  /** Stores all the actual triangles.  Other objects will use
-      pointers into this array.
-  */
-  std::vector<BoxedTriangle> m_Triangles;
-  /** Root of the hierarchy tree */
-  BoxTreeInnerNode           m_Root;
-  /** The current transform and its inverse */
-  Matrix3D                   m_Transform,m_InvTransform;
-  /** The triangles that last collided */
-  Triangle                   m_ColTri1,m_ColTri2;
-  /** The indices of the triangles that last collided */
-  int                        m_iColTri1,m_iColTri2;
-  /** The collision point of the last test */
-  Vector3D                   m_ColPoint;
+	bool getCollidingTriangles(float t1[9], float t2[9], bool ModelSpace);
+	bool getCollidingTriangles(int& t1, int& t2);
+	bool getCollisionPoint(float p[3], bool ModelSpace);
 
-  /** Type of the last collision test */
-  enum { Models, Ray, Sphere }       
-                             m_ColType;
-  /** Flag for indicating the model is finalized. */
-  bool                       m_Final;
-  /** Static models will maintain the same transform for a while
-      so the inverse transform is calculated each set instead
-      of in the collision test. */
-  bool                       m_Static;
+
+	int getTriangleIndex(BoxedTriangle* bt){
+		return int(bt-&*m_Triangles.begin());
+	}
+
+	// Stores all the actual triangles.  Other objects will use
+	// pointers into this array.
+	
+	std::vector<BoxedTriangle> m_Triangles;
+	// Root of the hierarchy tree
+	BoxTreeInnerNode           m_Root;
+	// The current transform and its inverse
+	Matrix3D                   m_Transform,m_InvTransform;
+	// The triangles that last collided
+	Triangle                   m_ColTri1,m_ColTri2;
+	// The indices of the triangles that last collided
+	int                        m_iColTri1,m_iColTri2;
+	// The collision point of the last test
+	Vector3D                   m_ColPoint;
+
+	// Type of the last collision test 
+	enum { Models, Ray, Sphere }       
+							 m_ColType;
+	// Flag for indicating the model is finalized.
+	bool                       m_Final;
+	// Static models will maintain the same transform for a while
+	// so the inverse transform is calculated each set instead
+	// of in the collision test. 
+	bool                       m_Static;
 };
 
 

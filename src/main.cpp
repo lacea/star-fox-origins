@@ -304,7 +304,7 @@ static void init(){
 
 	//Extra, to see what happens.
 	//--DCN: TAKE IT OUT!
-	GX_SetCullMode(GX_CULL_NONE);
+	//GX_SetCullMode(GX_CULL_NONE);
 	//GX_SetCullMode(GX_CULL_FRONT);
 
 }

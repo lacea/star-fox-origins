@@ -27,7 +27,6 @@
 
 #include "Level.h"
 
-
 // For the lights
 #define BIG_NUMBER 32768
 
@@ -47,9 +46,6 @@ static litColor litcolors[] = {
 		{ 0xff, 0xff, 0xff, 0xff }  // Material 0
 	}
 };
-
-
-
 
 // Frames per second
 float FPS(){
@@ -80,10 +76,13 @@ float FPS(){
 //----------------------------------------
 
 Level::Level(){
-	linePos = a3dssVector3(0.0f ,0.0f, 0.0f);
-	lineAngle = a3dssVector3(0.0f ,0.0f, 0.0f);
+	linePos.x = 0.0f;
+	linePos.y = 0.0f;
+	linePos.z = 0.0f;
+	lineAngle.x = 0.0f;
+	lineAngle.y = 0.0f;
+	lineAngle.z = 0.0f;
 
-	num_asteroids = 0;
 	num_collisions = 0;
 	num_shots = 0;
 
@@ -171,11 +170,10 @@ bool mShotCallbackL1(Billboard * bill, Level* lvl, float speedFactor){
 	guVector temppos;
 	guVector adjustPos = {0.0f ,-0.05f, -0.42f};
 	guVecMultiply(lvl->player->rotationMtx, &adjustPos, &temppos);
-	//TODO: Convert this into guVectors!
-	a3dssVector3 pos(temppos.x, temppos.y, temppos.z);
-
-	//*/
-	bill->pos = lvl->player->pos + pos;
+	guVecAdd(&lvl->player->pos, &temppos, &bill->pos);
+	
+	//a3dssVector3 pos(temppos.x, temppos.y, temppos.z);
+	//bill->pos = lvl->player->pos + pos;
 	bill->width -= 0.03 * speedFactor;
 	bill->height -= 0.03 * speedFactor;
 	if (bill->width < 0.0f)    {
@@ -238,8 +236,12 @@ bool Level::loadLevelFile(string xmlFile){
 		TiXmlAttribute* pAttrib = object->ToElement()->FirstAttribute();
 		// Get the name of the model
 		string modelName = pAttrib->Value();
-		// Have to use fprintf for some reason!
-		//fprintf(stderr, "Model Name: %s\n", modelName.c_str());	
+
+		// TEMPORARY -- TAKE OUT OF XML FILE!
+		// Maybe the "ship" inside the file is screwing it up?
+		if(strcmp("ship", modelName.c_str()) == 0){
+			continue;
+		}
 		
 		TiXmlElement* attr = object->FirstChild("position")->ToElement();
 		
@@ -333,7 +335,6 @@ bool Level::init(u32 level){
 	///////////////////////////////////////////
 	// This is specific to Level 1 -- PUT INTO XML FILE!
 
-
 	// Load and push all the textures
 	objectTextures->pushTexture(PATH_TEXTURES "flare.png");
 	objectTextures->pushTexture(PATH_TEXTURES "particle.png");
@@ -380,7 +381,7 @@ bool Level::init(u32 level){
 
 
 
-
+	/*
 	///////////////////////////////////////////
 	// This is specific to Level 1 -- PUT INTO XML FILE!
 	tempObject = new Object3D(modelList->getModel("tunnel"));
@@ -393,14 +394,15 @@ bool Level::init(u32 level){
 	tempObject->az = 0.0f;
 
 	objectList->push(tempObject);
+	//*/
 
 
 	///////////////////////////////////////////
     
 	//Load all player related stuff
-	//setup player
+	// Set up the player
 	player->model = modelList->getModel("ship");
-	//set player position
+	// Set the player position
 	player->pos.x = 0;
 	player->pos.y = 0;
 	player->pos.z = -13;
@@ -448,9 +450,9 @@ bool Level::init(u32 level){
 
 	// Infinite position
 	//guVecNormalize(&lpos);
-	//lpos.x *= BIG_NUMBER;
-	lpos.y *= BIG_NUMBER;
-	//lpos.z *= BIG_NUMBER;
+	lpos.x *= BIG_NUMBER;
+	//lpos.y *= BIG_NUMBER;
+	lpos.z *= BIG_NUMBER;
 	// Or just:
 	// guVector lpos = {BIG_NUMBER, 0.0f, BIG_NUMBER};
 
@@ -461,17 +463,17 @@ bool Level::init(u32 level){
 	// Set the number of rasterized color channels
 	GX_SetNumChans(1);
 	// A very simple light
-    GX_SetChanCtrl(GX_COLOR0A0, GX_ENABLE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT0, GX_DF_CLAMP, GX_AF_NONE);
+	GX_SetChanCtrl(GX_COLOR0A0, GX_ENABLE, GX_SRC_VTX, GX_SRC_VTX, GX_LIGHT0, GX_DF_CLAMP, GX_AF_NONE);
+    // Original:
+    //GX_SetChanCtrl(GX_COLOR0A0, GX_ENABLE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT0, GX_DF_CLAMP, GX_AF_NONE);
     GX_SetChanAmbColor(GX_COLOR0A0, litcolors[0].amb);
     GX_SetChanMatColor(GX_COLOR0A0, litcolors[0].mat);
 
 	/////////
 	// FOG //
 	/////////	
-	GX_SetFog(GX_FOG_LIN, 1.0f, 100.0f, 0.0f, 1.0f, fogColor);
-	//GX_SetFog(GX_FOG_NONE, 1.0f, 100.0f, 0.0f, 1.0f, fogColor);
+	//GX_SetFog(GX_FOG_LIN, 1.0f, 100.0f, 0.0f, 1.0f, fogColor);
 	//*/
-
 	return true;
 }
 
@@ -493,7 +495,9 @@ void Level::clear(){
 	objectTextures->clear();
 	objectList->clear();
 	delete billList;
+	billList = NULL;
 	delete explosionList;
+	explosionList = NULL;
 }
 
 //-----------------------------------------------------------------------------
@@ -502,26 +506,14 @@ void Level::clear(){
 
 void Level::renderPlayer(Mtx view){
 
-	Mtx mv, rot;
+	Mtx mv;
 	guMtxCopy(view, mv);
 	guMtxTransApply(mv, mv, player->pos.x, player->pos.y, player->pos.z);
 
-	/*
-	// This is now down within the Player class
-	Mtx rotx, roty, rotz;
-	guMtxIdentity(rotx);
-	guMtxIdentity(roty);
-	guMtxIdentity(rotz);
-	guMtxRotDeg(rotx, 'x', -player->ax);
-	guMtxRotDeg(roty, 'y', player->az);
-	guMtxRotDeg(rotz, 'z', player->ay);
-	guMtxConcat(rotx, roty, rot);
-	guMtxConcat(rot, rotz, rot);
-	guMtxConcat(mv, rot, mv);
-	//*/
-
 	guMtxConcat(mv, player->rotationMtx, mv);
 
+	GX_SetChanCtrl(GX_COLOR0A0, GX_ENABLE, GX_SRC_REG, GX_SRC_VTX, GX_LIGHT0, GX_DF_CLAMP, GX_AF_NONE);
+    
 	player->model->render(mv);
 }
 //
@@ -535,10 +527,7 @@ void Level::renderBillBoards(Mtx view){
 	glDisable(GL_FOG);
 	glDepthMask(GL_FALSE);
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-
-#ifdef TODO
 	glDisable(GL_LIGHTING);
-#endif
 	glEnable(GL_BLEND);
 	//*/
 
@@ -574,30 +563,32 @@ void Level::renderBillBoards(Mtx view){
 void Level::renderAsteroids(Mtx view){
 	Object3D *tempObject;
 
-	GX_SetFog(GX_FOG_LIN, 1.0f, 100.0f, 0.0f, 1.0f, fogColor);
-
-	/*
-	glEnable(GL_LIGHTING);
-	glEnable(GL_FOG);
-	//*/
+	//GX_SetFog(GX_FOG_LIN, 1.0f, 100.0f, 0.0f, 1.0f, fogColor);
 
 	objectIterator iterator = objectList->begin();
-	num_asteroids = 0;
-	while(iterator != objectList->end()){
+
+	// View distance
+	static const f32 viewDist = 1000.f;
+
+	do{
 		tempObject = static_cast<Object3D *>(*iterator);
 
-		if(tempObject->pos.z<(camera->pos.z) && tempObject->pos.z>(camera->pos.z-500)){
+		if(tempObject->pos.z < camera->pos.z && tempObject->pos.z > (camera->pos.z - viewDist)){
 
 			Mtx mv, rot;
-			//guMtxIdentity(mv);
 			guMtxCopy(view, mv);
 			
 			guMtxTransApply(mv, mv, tempObject->pos.x, tempObject->pos.y, tempObject->pos.z);
 
-			guMtxIdentity(rot);
-			guMtxRotDeg(rot, 'x', tempObject->ax);
-			guMtxRotDeg(rot, 'y', tempObject->ay);
-			guMtxRotDeg(rot, 'z', tempObject->az);
+			Mtx rotx, roty, rotz;
+			guMtxIdentity(rotx);
+			guMtxIdentity(roty);
+			guMtxIdentity(rotz);
+			guMtxRotDeg(rotx, 'x', -tempObject->ax);
+			guMtxRotDeg(roty, 'y', tempObject->ay);
+			guMtxRotDeg(rotz, 'z', tempObject->az);
+			guMtxConcat(rotx, roty, rot);
+			guMtxConcat(rot, rotz, rot);
 
 			guMtxConcat(mv, rot, mv);
 
@@ -606,137 +597,107 @@ void Level::renderAsteroids(Mtx view){
 			//*
 			GX_LoadPosMtxImm(mv, GX_PNMTX0);
 			//
-			GX_SetTevOp(GX_TEVSTAGE0,GX_MODULATE);
+			GX_SetTevOp(GX_TEVSTAGE0, GX_DECAL);
 			GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORDNULL, GX_TEXMAP_NULL, GX_COLOR0A0);
 			//
 			GX_ClearVtxDesc();
 			GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
 			GX_SetVtxDesc(GX_VA_CLR0, GX_DIRECT);
-			// Why does this come out GREEN!?!?!
-            u8 r = 0x00;
-            u8 g = 0xff;
-            u8 b = 0xff;
-
-            GX_Begin(GX_QUADS, GX_VTXFMT_CLR, 24);          
-
-                    GX_Position3f32(-1.0f,1.0f,1.0f);       // Top Left of the quad (top)
-                    GX_Color4u8(r, g, b, 0xff);
-                    GX_Position3f32(1.0f,1.0f,1.0f);        // Top Right of the quad (top)
-                    GX_Color4u8(r, g, b, 0xff);
-                    GX_Position3f32(1.0f,1.0f,-1.0f);       // Bottom Right of the quad (top)
-                    GX_Color4u8(r, g, b, 0xff);
-                    GX_Position3f32(-1.0f,1.0f,-1.0f);      // Bottom Left of the quad (top)
-                    GX_Color4u8(r, g, b, 0xff);
-
-                    GX_Position3f32(-1.0f,-1.0f,1.0f);      // Top Left of the quad (bottom)
-                    GX_Color4u8(r, g, b, 0xff);
-                    GX_Position3f32(1.0f,-1.0f,1.0f);       // Top Right of the quad (bottom)
-                    GX_Color4u8(r, g, b, 0xff);
-                    GX_Position3f32(1.0f,-1.0f,-1.0f);      // Bottom Right of the quad (bottom)
-                    GX_Color4u8(r, g, b, 0xff);
-                    GX_Position3f32(-1.0f,-1.0f,-1.0f);     // Bottom Left of the quad (bottom)
-                    GX_Color4u8(r, g, b, 0xff);
-
-                    GX_Position3f32(-1.0f,1.0f,1.0f);       // Top Left of the quad (front)
-                    GX_Color4u8(r, g, b, 0xff);
-                    GX_Position3f32(-1.0f,-1.0f,1.0f);      // Top Right of the quad (front)
-                    GX_Color4u8(r, g, b, 0xff);
-                    GX_Position3f32(1.0f,-1.0f,1.0f);       // Bottom Right of the quad (front)
-                    GX_Color4u8(r, g, b, 0xff);
-                    GX_Position3f32(1.0f,1.0f,1.0f);        // Bottom Left of the quad (front)
-                    GX_Color4u8(r, g, b, 0xff);
-
-                    GX_Position3f32(-1.0f,1.0f,-1.0f);      // Top Left of the quad (back)
-                    GX_Color4u8(r, g, b, 0xff);
-                    GX_Position3f32(-1.0f,-1.0f,-1.0f);     // Top Right of the quad (back)
-                    GX_Color4u8(r, g, b, 0xff);
-                    GX_Position3f32(1.0f,-1.0f,-1.0f);      // Bottom Right of the quad (back)
-                    GX_Color4u8(r, g, b, 0xff);
-                    GX_Position3f32(1.0f,1.0f,-1.0f);       // Bottom Left of the quad (back)
-                    GX_Color4u8(r, g, b, 0xff);
-
-                    GX_Position3f32(-1.0f,1.0f,1.0f);       // Top Left of the quad (left)
-                    GX_Color4u8(r, g, b, 0xff);
-                    GX_Position3f32(-1.0f,1.0f,-1.0f);      // Top Right of the quad (back)
-                    GX_Color4u8(r, g, b, 0xff);
-                    GX_Position3f32(-1.0f,-1.0f,-1.0f);     // Bottom Right of the quad (back)
-                    GX_Color4u8(r, g, b, 0xff);
-                    GX_Position3f32(-1.0f,-1.0f,1.0f);      // Bottom Left of the quad (back)
-                    GX_Color4u8(r, g, b, 0xff);
-
-                    GX_Position3f32(1.0f,1.0f,1.0f);        // Top Left of the quad (right)
-                    GX_Color4u8(r, g, b, 0xff);
-                    GX_Position3f32(1.0f,1.0f,-1.0f);       // Top Right of the quad (right)
-                    GX_Color4u8(r, g, b, 0xff);
-                    GX_Position3f32(1.0f,-1.0f,-1.0f);      // Bottom Right of the quad (right)
-                    GX_Color4u8(r, g, b, 0xff);
-                    GX_Position3f32(1.0f,-1.0f,1.0f);       // Bottom Left of the quad (right)
-                    GX_Color4u8(r, g, b, 0xff);
-
-            GX_End();
-	        //*/
 
 
-			++num_asteroids;
+			const u8 r = 0x00;
+			const u8 g = 0x00;
+			const u8 b = 0xff;
+
+			GX_Begin(GX_QUADS, GX_VTXFMT_CLR, 24);          
+
+				GX_Position3f32(-1.0f,1.0f,1.0f);       // Top Left of the quad (top)
+				GX_Color4u8(r, g, b, 0xff);
+				GX_Position3f32(1.0f,1.0f,1.0f);        // Top Right of the quad (top)
+				GX_Color4u8(r, g, b, 0xff);
+				GX_Position3f32(1.0f,1.0f,-1.0f);       // Bottom Right of the quad (top)
+				GX_Color4u8(r, g, b, 0xff);
+				GX_Position3f32(-1.0f,1.0f,-1.0f);      // Bottom Left of the quad (top)
+				GX_Color4u8(r, g, b, 0xff);
+
+				GX_Position3f32(-1.0f,-1.0f,1.0f);      // Top Left of the quad (bottom)
+				GX_Color4u8(r, g, b, 0xff);
+				GX_Position3f32(1.0f,-1.0f,1.0f);       // Top Right of the quad (bottom)
+				GX_Color4u8(r, g, b, 0xff);
+				GX_Position3f32(1.0f,-1.0f,-1.0f);      // Bottom Right of the quad (bottom)
+				GX_Color4u8(r, g, b, 0xff);
+				GX_Position3f32(-1.0f,-1.0f,-1.0f);     // Bottom Left of the quad (bottom)
+				GX_Color4u8(r, g, b, 0xff);
+
+				GX_Position3f32(-1.0f,1.0f,1.0f);       // Top Left of the quad (front)
+				GX_Color4u8(r, g, b, 0xff);
+				GX_Position3f32(1.0f,1.0f,1.0f);        // Top Right of the quad (front)
+				GX_Color4u8(r, g, b, 0xff);
+				GX_Position3f32(1.0f,-1.0f,1.0f);       // Bottom Right of the quad (front)
+				GX_Color4u8(r, g, b, 0xff);
+				GX_Position3f32(-1.0f,-1.0f,1.0f);      // Bottom Left of the quad (front)
+				GX_Color4u8(r, g, b, 0xff);
+
+				GX_Position3f32(-1.0f,1.0f,-1.0f);      // Top Left of the quad (back)
+				GX_Color4u8(r, g, b, 0xff);
+				GX_Position3f32(-1.0f,-1.0f,-1.0f);     // Top Right of the quad (back)
+				GX_Color4u8(r, g, b, 0xff);
+				GX_Position3f32(1.0f,-1.0f,-1.0f);      // Bottom Right of the quad (back)
+				GX_Color4u8(r, g, b, 0xff);
+				GX_Position3f32(1.0f,1.0f,-1.0f);       // Bottom Left of the quad (back)
+				GX_Color4u8(r, g, b, 0xff);
+
+				GX_Position3f32(-1.0f,1.0f,1.0f);       // Top Left of the quad (left)
+				GX_Color4u8(r, g, b, 0xff);
+				GX_Position3f32(-1.0f,1.0f,-1.0f);      // Top Right of the quad (left)
+				GX_Color4u8(r, g, b, 0xff);
+				GX_Position3f32(-1.0f,-1.0f,-1.0f);     // Bottom Right of the quad (left)
+				GX_Color4u8(r, g, b, 0xff);
+				GX_Position3f32(-1.0f,-1.0f,1.0f);      // Bottom Left of the quad (left)
+				GX_Color4u8(r, g, b, 0xff);
+
+				GX_Position3f32(1.0f,1.0f,1.0f);        // Top Left of the quad (right)
+				GX_Color4u8(r, g, b, 0xff);
+				GX_Position3f32(1.0f,1.0f,-1.0f);       // Top Right of the quad (right)
+				GX_Color4u8(r, g, b, 0xff);
+				GX_Position3f32(1.0f,-1.0f,-1.0f);      // Bottom Right of the quad (right)
+				GX_Color4u8(r, g, b, 0xff);
+				GX_Position3f32(1.0f,-1.0f,1.0f);       // Bottom Left of the quad (right)
+				GX_Color4u8(r, g, b, 0xff);
+
+			GX_End();
+			//*/
+
+
+			// Set the blending function back to its original value
+			GX_SetTevOp(GX_TEVSTAGE0, GX_MODULATE);
+
 		}
 		++iterator;
-	}
-	GX_SetFog(GX_FOG_NONE, 1.0f, 100.0f, 0.0f, 1.0f, fogColor);
-	//glDisable(GL_FOG);
+
+	}while(iterator != objectList->end());
+
 }
 //
 void Level::renderShots(Mtx view){
-	objectIterator iterator;
+
+	objectIterator iterator = playerShotList->begin();
 	PlayerShot *temp;
-    
-	//glEnable(GL_FOG);
+    Mtx mv, rot;
 
-#ifdef TODO
-	glPushAttrib(GL_LIGHTING_BIT | GL_TEXTURE_BIT);
-	glDisable(GL_LIGHTING);
-	glDisable(GL_TEXTURE_2D);
-#endif
-
-	iterator = playerShotList->begin();
-	num_shots = 0;
-    
 	while(iterator != playerShotList->end()){
 		temp = static_cast<PlayerShot *>(*iterator);
 
-		//*
-		Mtx mv, rot;
-		//--DCN: Maybe this?
-		//guMtxCopy(view, mv);
-		guMtxIdentity(mv);
-		guMtxTransApply(mv, mv, temp->pos.x, temp->pos.y, temp->pos.z );
+		guMtxCopy(view, mv);
 
-		guMtxIdentity(rot);
-		guMtxRotDeg(rot, 'x', temp->ax);
-		guMtxRotDeg(rot, 'y', temp->ay);
-		guMtxRotDeg(rot, 'z', temp->az);
+		guMtxConcat(mv, temp->rotationMtx, mv);
 
-		guMtxConcat(mv, rot, mv);
+		guMtxTransApply(mv, mv, temp->pos.x, temp->pos.y, temp->pos.z);
+
 		temp->model->render(mv);
-		//*/
 
-		//temp->model->render();
-
-		/*
-		glPushMatrix();
-		glTranslatef(temp->pos.x, temp->pos.y, temp->pos.z );
-		glRotatef(temp->ax, 1.0f, 0.0f, 0.0f);
-		glRotatef(temp->ay, 0.0f, 1.0f, 0.0f);
-		glRotatef(temp->az, 0.0f, 0.0f, 1.0f);
-		temp->model->render(view);
-		glPopMatrix();
-		//*/
 		++iterator;
-		++num_shots;
 	}
-	/*
-	glPopAttrib();
-	//*/
-
 }
 
 //----------------------------------------
@@ -760,66 +721,45 @@ void Level::Render(){
 	camera->pos.y = player->pos.y*(0.8f);
 	camera->look = camera->pos;
 	camera->look.z -= 1.0f;
+	/*
+	// Should it be done this way?
+	camera->look.x = camera->pos.x;
+	camera->look.y = camera->pos.y;
+	camera->look.z = camera->pos.z - 1;
+	//*/
 	camera->up.x = cos(((player->ay*0.2f*M_PI)/180.0f)+M_PI/2);
 	camera->up.y = sin(((player->ay*0.2f*M_PI)/180.0f)+M_PI/2);
 
 	///////////////////////////////////////////
-	// This is going to be a lot more efficient when we change everything to guVectors:
 	Mtx view;
-	guVector pos = {camera->pos.x, camera->pos.y, camera->pos.z};
-	guVector look = {camera->look.x, camera->look.y, camera->look.z};
-	guVector up = {camera->up.x, camera->up.y, camera->up.z};
-	
-	guLookAt(view, &pos, &up, &look);
-	
+	// Look through the camera
+	guLookAt(view, &camera->pos, &camera->up, &camera->look);
+
 	///////////////////////////////////////////
 
-	//--DCN: You know what would be CRAZY?!?!
-	// Combining all these one-time-use functions into one!
-	// I told you, I'm CRAZY! 
 	renderPlayer(view);
-	//*
 	renderShots(view);
 	renderAsteroids(view);
 	renderBillBoards(view);
-	//*/
-    
+
 	//--------------------------
-	// Render the line helper
+	// Draw Aiming reticule:
+
 	Mtx modelview;
-	Mtx rot;		// Rotational matrix
 
 	// Translate
 	guMtxCopy(view, modelview);
 	guMtxTransApply(modelview, modelview, player->pos.x, player->pos.y, player->pos.z);
 
 	// Rotate
-	//
-
-	/*
-	guMtxIdentity(rot);
-	guMtxRotDeg(rot, 'x', player->ax);
-	guMtxRotDeg(rot, 'y', player->ay);
-	guMtxRotDeg(rot, 'z', player->az);
-	//*/
-	/*
-	Mtx rotx, roty, rotz;
-	guMtxIdentity(rotx);
-	guMtxIdentity(roty);
-	guMtxIdentity(rotz);
-	guMtxRotDeg(rotx, 'x', -player->ax);
-	guMtxRotDeg(roty, 'y', player->ay);
-	guMtxRotDeg(rotz, 'z', player->az);
-	guMtxConcat(rotx, roty, rot);
-	guMtxConcat(rot, rotz, rot);
-	//*/
-
-	// Combine the matrices
 	guMtxConcat(modelview, player->rotationMtx, modelview);
 
 	// Load the modelview matrix to be our position matrix
 	GX_LoadPosMtxImm(modelview, GX_PNMTX0);
-	
+
+
+	// Render the line helper	
+	/*
 	GX_ClearVtxDesc();
 	GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
 	GX_SetVtxDesc(GX_VA_CLR0, GX_DIRECT);
@@ -830,35 +770,38 @@ void Level::Render(){
 		GX_Position3f32(0, 0, -1000);
 		GX_Color4u8(0xff, 0xff, 0xff, 0xff);
 	GX_End();
+	//*/
 
-	// Draw Aiming reticule:
 
-	//*	
-	GX_SetVtxDesc(GX_VA_CLR0, GX_NONE);
-	GX_SetVtxDesc(GX_VA_TEX0, GX_DIRECT);
-	// We are using textures
-	//GX_SetTevOp(GX_TEVSTAGE0, GX_REPLACE);
-	//GX_SetTexCoordGen(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY);//GX_TEXMTX0
+	GX_SetTevOp(GX_TEVSTAGE0, GX_DECAL);
 
-	GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
+	// Ignore the light
+	GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLORNULL);
 	//GX_InvalidateTexAll();
+
 	GX_LoadTexObj(objectTextures->getTexture(3), GX_TEXMAP0);
 
 
+	GX_ClearVtxDesc();
+	GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
+	GX_SetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+
 	GX_Begin(GX_QUADS, GX_VTXFMT_TEX, 4);
 
-		GX_Position3f32(-10.0f,10.0f,-100.0f);	// Top Left of the quad (back)
-		GX_TexCoord2f32(1.0f,0.0f);
-		GX_Position3f32(-10.0f,-10.0f,-100.0f);	// Top Right of the quad (back)
-		GX_TexCoord2f32(1.0f,1.0f);
-		GX_Position3f32(10.0f,-10.0f,-100.0f);	// Bottom Right of the quad (back)
-		GX_TexCoord2f32(0.0f,1.0f);
-		GX_Position3f32(10.0f,10.0f,-100.0f);		// Bottom Left of the quad (back)
+		GX_Position3f32(-3.0f,3.0f,-50.0f);
 		GX_TexCoord2f32(0.0f,0.0f);
+		GX_Position3f32(3.0f,3.0f,-50.0f);
+		GX_TexCoord2f32(1.0f,0.0f);
+		GX_Position3f32(3.0f,-3.0f,-50.0f);
+		GX_TexCoord2f32(1.0f,1.0f);
+		GX_Position3f32(-3.0f,-3.0f,-50.0f);
+		GX_TexCoord2f32(0.0f,1.0f);
 
 	GX_End();
-	//*/
-	
+
+	// Set the blending function back to its original value
+	GX_SetTevOp(GX_TEVSTAGE0, GX_MODULATE);
+
 	//-------------------------
 
 	// This is what will become our communications 
@@ -882,7 +825,7 @@ void Level::Render(){
 	PrintText(0, 0, 120, 1.0f, 1.0f, " DZ: %7.02f", player->dz);
 	PrintText(0, 0, 130, 1.0f, 1.0f, " Asteroids: %d", num_asteroids);
 	PrintText(0, 0, 140, 1.0f, 1.0f, " Shots: %d", num_shots);
-	
+
 
 	// Reset it back to being a perspective projection
 
@@ -930,6 +873,7 @@ void Level::moveAsteroids(float speedFactor){
 
 	//--DCN: What follows is something just awful. I dislike it very much.
 
+	//object3DIterator iterator = objectList->begin();
 	objectIterator iterator = objectList->begin();
 	Object3D *tempObject;
 	Billboard *bill = 0;
@@ -962,46 +906,83 @@ void Level::moveAsteroids(float speedFactor){
 void Level::moveShots(float speedFactor){
 	static bool pressed = false;
 	PlayerShot *temp;
-	Billboard *bill = 0;
+	Billboard *bill = NULL;
 	objectIterator iterator = playerShotList->begin();
+
+
+
+	u32 numshots = 0;
+
 	while (iterator != playerShotList->end()){
 		temp = static_cast<PlayerShot *>(*iterator);
+
+		//--DCN: WARNING! There doesn't seem to be a guVecCopy!
+		// Do we need to copy it?! AAAAAAAH!
+		//*
+		//temp->prevPos.x = temp->pos.x;
+		//temp->prevPos.y = temp->pos.y;
+		//temp->prevPos.z = temp->pos.z;
+		temp->prevPos = temp->pos;
+
+		//temp->pos.z -= temp->speed;
+
+		guVecScale(&temp->direction, &temp->direction, (temp->speed*speedFactor));
+		guVecAdd(&temp->pos, &temp->direction, &temp->pos);
+		//*/
+		/*
 		temp->prevPos = temp->pos;
 		temp->pos += temp->direction*temp->speed*speedFactor;
-	
-		if(temp->pos.z < player->pos.z - 50){
+		//*/	
+
+		if(temp->pos.z < player->pos.z - 200 || (!(*iterator)->active)){
 			iterator = playerShotList->erase(iterator);
-		}else if (!(*iterator)->active) {
-			iterator = playerShotList->erase(iterator);
-		}
-		else{
+		}else{
 			++iterator;
 		}
 	}
 
 	if (btns->shot){
 		if (!pressed){
+
 			pressed = true;
 
-			temp = new (std::nothrow) PlayerShot(modelList->getModel(1));
-			temp->rMatrix = a3dssMatrix3(player->ax, player->ay, player->az);
-			temp->pos = player->pos + temp->rMatrix * a3dssVector3(0.0f ,-0.05f, -1.3f);
-			// GX way:
-			/*
-			guMtxRotDeg(temp->rMatrix, temp->rMatrix, 'x', player->ax);
-			guMtxRotDeg(temp->rMatrix, temp->rMatrix, 'y', player->ay);
-			guMtxRotDeg(temp->rMatrix, temp->rMatrix, 'z', player->az);
-			// Or soon:
-			//guMtxRotDeg3(temp->rMatrix, temp->rMatrix, player->ax, player->ay, player->az);
+			temp = new PlayerShot(modelList->getModel(1));
 
-			guMtxTransApply(temp->rMatrix, 0.0f ,-0.05f, -1.3f);
+			// Doing it the more traditional way:
+			/*
+			Mtx rotx, roty, rotz;
+			guMtxIdentity(rotx);
+			guMtxIdentity(roty);
+			guMtxIdentity(rotz);
+			guMtxRotDeg(rotx, 'x', -player->ax);
+			guMtxRotDeg(roty, 'y', player->ay);
+			guMtxRotDeg(rotz, 'z', player->az);
+			guMtxConcat(rotx, roty, temp->rotationMtx);
+			guMtxConcat(temp->rotationMtx, rotz, temp->rotationMtx);
+			guMtxTransApply(temp->rotationMtx, temp->rotationMtx, 0.0f ,0.05f, -19.3f);
+			//*/
+			
+			// Cheating a little bit: just translating the 
+			// already rotated matrix. 
+			guMtxTransApply(player->rotationMtx, temp->rotationMtx, 0.0f , 0.05f, -5.3f);
+			
+			//--DCN: There is no guVecCopy!
+			temp->prevPos.x = player->pos.x;
+			temp->prevPos.y = player->pos.y;
+			temp->prevPos.z = player->pos.z;
+			temp->pos.x = player->pos.x;
+			temp->pos.y = player->pos.y;
+			temp->pos.z = player->pos.z;
 			//*/
 
-			temp->prevPos = temp->pos;
-			temp->direction = temp->rMatrix * a3dssVector3(0.0f ,0.0f, -1.0f);
-			temp->speed = 0.7f;
-			if (!temp)
-				return;
+			guVector dir = {0.0f ,0.0f, -1.0f};
+			guVecMultiply(temp->rotationMtx, &dir, &temp->direction);
+
+			//temp->rMatrix = a3dssMatrix3(player->ax, player->ay, player->az);
+			//temp->pos = player->pos + temp->rMatrix * a3dssVector3(0.0f ,-0.05f, -1.3f);
+			//temp->direction = temp->rMatrix * a3dssVector3(0.0f ,0.0f, -1.0f);
+
+			temp->speed = 0.04f;
 			temp->type = TYPE_PLAYERSHOT;
 			temp->ax = player->ax;
 			temp->ay = player->ay;
@@ -1043,34 +1024,63 @@ void Level::moveShots(float speedFactor){
 
 void Level::Logic(){
 	// YIKES! This makes everything move WAY too fast! Divide for now
-	float speedFactor = updateSpeedFactor()/4112;  //update speed according with the cpu speed
+	float speedFactor = updateSpeedFactor()/4112;
 
 	// Move player
 	player->move(speedFactor);
 
+
+	//--DCN: TEMPORARY MEASURE: make it loop
+	if(player->pos.z < -620){
+		player->pos.z = 0;
+	}
+		
+
 	// Move down the path
 	//*
-	player->pos.z -= 0.03f*speedFactor;
+	player->pos.z -= 0.01f*speedFactor;
 	camera->pos.z  = player->pos.z+2.6f;
 	//*/
-    
+
 	moveShots(speedFactor);
 	moveAsteroids(speedFactor);
 	moveBillboards(speedFactor);
     
 	// Shot line
-	linePos = player->pos;// + player->rMatrix * a3dssVector3(0.0f ,-0.2f, -6.0f);
+
+
+	//--DCN: There is no guVecCopy!
+
+	linePos.x = player->pos.x;
+	linePos.y = player->pos.y;
+	linePos.z = player->pos.z;
+	// Would this even work?
+	//linePos = player->pos;
+	lineAngle.x = player->ax;
+	lineAngle.y = player->ay;
+	lineAngle.z = player->az;
+
+	/*
+	linePos = player->pos;
 	lineAngle = a3dssVector3(player->ax, player->ay, player->az);
+	//*/
     
 
 	// Currently, collision detection DOES NOT WORK!
+
+	//--DCN: I think that the collision model won't work
+	// due to the fact that each model is only built once
+	// yet has "x, y, and z" in them. We translate the 
+	// objects differently now.
+	// 
+
 	/////////////////////////
 	// Collision detection //
 	/////////////////////////
-	//*
-	// Test collisions of shot with asteroids
-	objectIterator iterator2; // = objectList->begin();
 
+	// Test collisions of shot with asteroids
+	objectIterator iterator2;
+	/*
 	for(objectIterator shotItr = playerShotList->begin(), shotItrEnd = playerShotList->end(); shotItr != shotItrEnd; ++shotItr){
 		PlayerShot *shot = static_cast<PlayerShot *>(*shotItr);
 		if(!shot->active)
@@ -1087,7 +1097,7 @@ void Level::Logic(){
 				m.rotate(Vector3D(shot->ax, shot->ay, shot->az));
 				shot->model->collisionModel->setTransform(m);
 
-				if(obj->model->collisionModel->rayCollision(shot->pos.v, shot->direction.v,false,-6.0f, 6.0f)){
+				if(obj->model->collisionModel->rayCollision(shot->pos, shot->direction,false,-6.0f, 6.0f)){
 					(*shotItr)->active = false;
 					if((*iterator2)->destroyable)
 						(*iterator2)->active = false;
@@ -1096,13 +1106,6 @@ void Level::Logic(){
 			}
 		}
 	}
-
-	//--DCN: 
-	/*
-	The objectIterator iterates on the BASE class. 
-	I think that, even though we cast it to a derived class 
-	(Object3D), it isn't recognizing the added variables 
-	in the derived class. Not sure though.
 	//*/
 
 	//Test collisions of ship with asteroids

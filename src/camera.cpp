@@ -18,8 +18,9 @@
 
 #include "camera.h"
 
-Camera::Camera(float x, float y, float z, float lx, float ly, float lz, float ux, float uy, float uz){
-	/*
+Camera::Camera(f32 x, f32 y, f32 z, f32 lx, f32 ly, f32 lz, f32 ux, f32 uy, f32 uz){
+//:pos({x,y,z}), look({lx,ly,lz}), up({ux,uy,uz}), 
+	//*
 	pos.x = x;
 	pos.y = y;
 	pos.z = z;
@@ -31,42 +32,42 @@ Camera::Camera(float x, float y, float z, float lx, float ly, float lz, float ux
 	up.z = uz;
 	//*/
 
-	//*
+	/*
 	pos = a3dssVector3(x,y,z);
     look = a3dssVector3(lx, ly, lz);
     up = a3dssVector3(ux, uy, uz);
 	//*/
 }
 
-void Camera::setPos(const float a, const float b, const float c){
+inline void Camera::setPos(const f32 a, const f32 b, const f32 c){
 
-	/*
+	//*
 	pos.x = a;
 	pos.y = b;
 	pos.z = c;
 	//*/
 
-	pos = a3dssVector3(a, b, c);
+	//pos = a3dssVector3(a, b, c);
 }
-inline void Camera::setLook(const float a, const float b, const float c){
+inline void Camera::setLook(const f32 a, const f32 b, const f32 c){
 
-	/*
+	//*
 	look.x = a;
 	look.y = b;
 	look.z = c;
 	//*/
 
-	look = a3dssVector3(a, b, c);
+	//look = a3dssVector3(a, b, c);
 }
-inline void Camera::setUp(const float a, const float b, const float c){
+inline void Camera::setUp(const f32 a, const f32 b, const f32 c){
 
-	/*
+	//*
 	up.x = a;
 	up.y = b;
 	up.z = c;
 	//*/
 
-	up = a3dssVector3(a, b, c);
+	//up = a3dssVector3(a, b, c);
 }
 
 /*
@@ -82,6 +83,5 @@ void Camera::update(){
 	
 	//guLookat(pos, look, up);
 
-	//gluLookAt(pos.x, pos.y, pos.z, look.x, look.y, look.z, up.x, up.y, up.z);
 }
 //*/

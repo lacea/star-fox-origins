@@ -48,19 +48,10 @@
 
 #define MODEL_FORMAT_VERSION 4
 
-// Temporary display list size (really big to fit everything in)
-static const u32 TEMP_DISPLIST_SIZE = 32768;
 
 struct modelVertex{
-	//*	
 	guVector v;			// Vertex (x,y,z) component
 	guVector n;			// Vertex normal
-	//*/
-	/*
-    f32 v[3];				// (x,y,z) component
-    f32 n[3];				// Vertex normal
-	//*/
-	
 };
 
 struct modelFace{
@@ -79,11 +70,11 @@ public:
 	Model(const char* modelName, bool buildCollisionModel = false);
 	~Model();
 
-	void deleteTexture(int texture);
 	void render(Mtx modelview);
-	s32 getNumberOfVertices(){return num_verts;};
-	s32 getNumberOfFaces(){return num_faces;};
-	s32 getNumberOfTextureIds(){return num_textures;};
+	//void deleteTexture(s32 texture);
+	//s32 getNumberOfVertices(){return num_verts;};
+	//s32 getNumberOfFaces(){return num_faces;};
+	//s32 getNumberOfTextureIds(){return num_textures;};
 	const char* getName(){return name;};
 
 	bool loadModel(const char* fileName, bool buildCollisionModel = false);
@@ -92,6 +83,9 @@ public:
 	CollisionModel3DImpl* collisionModel;
 	
 private:
+	
+	// Temporary display list size (really big to fit everything in)
+	static const u32 TEMP_DISPLIST_SIZE = 32768;
 
     modelVertex*  vList;		// Vertices
     modelFace*    fList;		// Faces
@@ -100,22 +94,19 @@ private:
 	u8* displayList;
 	u32 actualDLsize;			// Actual size of the display list
 	
-    f32 x,y,z;					// Location
-    f32 ax,ay,az;				// Angles of rotation
-    f32 sizeX, sizeY, sizeZ;	// Size
     s32 num_verts;				// Number of vertices in the model
     s32 num_faces;				// Number of faces in the model
 
 	// Textures
 	//TODO: Make everything load into the texture manager, maybe?
-    GXTexObj* textureObjs;
+    Texture* textureObjs;
     u16 num_textures;
 
 	char name[MAX_MODEL_NAME_LENGTH];
 	
     
     void buildDisplayList();
-    void loadInTexture(const char *texture, GXTexObj& textureId);
+    void loadInTexture(const char* fileName, Texture& texture);
     s32 untexturedFaces();
 
 };
@@ -139,7 +130,7 @@ public:
    ~ModelList();
     void push(Model* model);
     void clear();
-    Model* getModel(int index);
+    Model* getModel(s32 index);
     Model* getModel(const char* name);
 
 private:

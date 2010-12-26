@@ -24,17 +24,19 @@
 
 class Camera{
 public:
-    Camera( float x  = 0.0f, float y  = 0.0f, float z  = 0.0f,
-            float lx = 0.0f, float ly = 0.0f, float lz = -1.0f,
-            float ux = 0.0f, float uy = 1.0f, float uz = 0.0f);
-    void setPos(const float a, const float b, const float c);//{pos = a3dssVector3(a, b, c);}
-    inline void setLook(const float a, const float b, const float c);//{look = a3dssVector3(a, b, c);}
-    inline void setUp(const float a, const float b, const float c);//{up = a3dssVector3(a, b, c);}
-    void update();//{gluLookAt(pos.x, pos.y, pos.z, look.x, look.y, look.z, up.x, up.y, up.z);}
+    Camera( f32 x  = 0.0f, f32 y  = 0.0f, f32 z  = 0.0f,
+            f32 lx = 0.0f, f32 ly = 0.0f, f32 lz = -1.0f,
+            f32 ux = 0.0f, f32 uy = 1.0f, f32 uz = 0.0f);
+    inline void setPos(const f32 a, const f32 b, const f32 c);
+    inline void setLook(const f32 a, const f32 b, const f32 c);
+    inline void setUp(const f32 a, const f32 b, const f32 c);
+	inline void set(const guVector p, const guVector l, const guVector u);
+    void update();
     
-    a3dssVector3 pos;
-    a3dssVector3 look;   //look vector
-    a3dssVector3 up;     //up vector
+    guVector pos;    // Position vector
+    guVector look;   // Look vector
+    guVector up;     // Up vector
+
 };
 
 #endif //__CAMERA_H__

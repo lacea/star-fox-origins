@@ -88,7 +88,11 @@ void Billboard::setCallback(billFunc func){
 }
 
 void Billboard::setPos(f32 x, f32 y, f32 z){
-    pos = a3dssVector3(x,y,z);
+    //pos = a3dssVector3(x,y,z);
+	//
+	pos.x = x;
+	pos.y = y;
+	pos.z = z;
 }
 
 void Billboard::setSize(f32 w, f32 h){
@@ -108,7 +112,9 @@ void Billboard::update(Level* lvl, float speedFactor){
 }
 
 void Billboard::render(){
-	// make billboard look to Camera
+
+
+	/*
 	a3dssVector3 campos = camera->pos;
 	a3dssVector3 target = camera->look;
 	a3dssVector3 up = camera->up;
@@ -121,20 +127,47 @@ void Billboard::render(){
 	vertical.normalize();
 	horizontal *= width;
 	vertical *= height;
-    
-	
+
 	vertices[0] = pos + horizontal + vertical;
 	vertices[1] = pos - horizontal + vertical;
 	vertices[2] = pos - horizontal - vertical;
 	vertices[3] = pos + horizontal - vertical;
-	
-    //render the billboard
-    
-	//glBindTexture(GL_TEXTURE_2D, texture);
+	//*/
+
+	//*
+	//--DCN: This is what we will be replacing the above code with
+	guVector view;
+	guVecSub(&camera->look, &camera->pos, &view);
+	guVecNormalize(&view);
+
+	guVector horizontal;
+	guVecCross(&camera->up, &view, &horizontal);
+	guVecNormalize(&horizontal);
+
+	guVector vertical;
+	guVecCross(&horizontal, &view, &vertical);
+	guVecNormalize(&vertical);
+
+	guVecScale(&horizontal, &horizontal, width); // horizontal *= width
+	guVecScale(&vertical, &vertical, height);    // vertical *= height
+
+	// Temporary vectors
+	guVector pph;		// Pos + horizontal
+	guVector pmh;		// Pos - horizontal
+
+	guVecAdd(&pos, &horizontal, &pph);
+	guVecSub(&pos, &horizontal, &pmh);
+
+	guVecAdd(&pph, &vertical, &vertices[0]); //pos + horizontal + vertical
+	guVecAdd(&pmh, &vertical, &vertices[1]); //pos - horizontal + vertical
+	guVecSub(&pmh, &vertical, &vertices[2]); //pos - horizontal - vertical
+	guVecSub(&pph, &vertical, &vertices[3]); //pos + horizontal - vertical
+
+	//*/	
+    // Render the billboard
 
 	// We are using colors and textures
 	GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
-	//
 
 	GX_ClearVtxDesc();
 	GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);

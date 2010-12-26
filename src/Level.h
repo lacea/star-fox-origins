@@ -61,7 +61,6 @@ public:
 	Level();
 	~Level();
 
-
 	// The Big Three functions that MUST be implemented
 	void Input();
 	void Logic();
@@ -85,9 +84,9 @@ public:
 	void renderAsteroids(Mtx view);
 	void renderShots(Mtx view);
 	
-	void moveBillboards(float speedFactor);
-	void moveAsteroids(float speedFactor);
-	void moveShots(float speedFactor);
+	void moveBillboards(f32 speedFactor);
+	void moveAsteroids(f32 speedFactor);
+	void moveShots(f32 speedFactor);
 
 #ifdef TODO
 // Make these private!
@@ -96,13 +95,12 @@ private:
 
 	ObjectList *billList;
 	ObjectList *explosionList;
-	//GameState *state;
-	a3dssVector3 linePos;
-	a3dssVector3 lineAngle;
 
-	int num_asteroids;
-	int num_collisions;
-	int num_shots;
+	guVector linePos;
+	guVector lineAngle;
+
+	s32 num_collisions;
+	s32 num_shots;
 
 	GXColor fogColor;
 
@@ -111,23 +109,23 @@ private:
 	// From Old GameState //
 	////////////////////////
 	Buttons* btns;
-    Camera* camera;
+	Camera* camera;
 
-    // Texture manager
-    TextureMgr* objectTextures;
+	// Texture manager
+	TextureMgr* objectTextures;
 
-    // List of 3D Models
-    ModelList* modelList;
+	// List of 3D Models
+	ModelList* modelList;
 
-    // Lists of all the objects of the level
-    ObjectList* objectList;
-    ObjectList* playerShotList;
-    ObjectList* enemyShotList;
+	// Lists of all the objects of the level
+	ObjectList* objectList;
+	ObjectList* playerShotList;
+	ObjectList* enemyShotList;
 	// The player, obviously
 	Player* player;
 
 	// The font that we will be using (possibly use a global font?)
-    GXTexObj font;
+	Texture font;
 
 
 	/*

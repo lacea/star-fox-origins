@@ -65,7 +65,8 @@ public:
     void render();
     
 private:
-    a3dssVector3 vertices[4];
+	guVector vertices[4];
+    //a3dssVector3 vertices[4];
     GXTexObj* texture;
 };
 

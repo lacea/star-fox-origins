@@ -25,18 +25,21 @@
 class PlayerShot : public BaseObject{
 
 public:
-    a3dssVector3 prevPos;
-    a3dssVector3 direction;
-    float ax,ay,az;    //rotation angle
-    float speed;    //delta aceleration
-    a3dssMatrix3 rMatrix;
 
-    Model* model;
+	guVector prevPos;
+	guVector direction;
 
-    PlayerShot();
-    PlayerShot(float x, float y, float z);
-    PlayerShot(Model * model);
-    PlayerShot(Model * model, float x, float y, float z);
+	float ax, ay, az;    // Rotation angle
+	float speed;
+	Mtx rotationMtx;
+
+
+	Model* model;
+
+	PlayerShot();
+	PlayerShot(f32 x, f32 y, f32 z);
+	PlayerShot(Model* model);
+	PlayerShot(Model* model, f32 x, f32 y, f32 z);
 };
 
 #endif

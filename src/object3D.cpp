@@ -64,7 +64,7 @@ Object3DList::~Object3DList(){
     }
 }
 
-void Object3DList::push(Object3D * object){
+void Object3DList::push(Object3D* object){
 	vector.push_back(object);
 }
 

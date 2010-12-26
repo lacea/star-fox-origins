@@ -19,6 +19,7 @@
 #ifndef __SF_BASEOBJECT__
 #define __SF_BASEOBJECT__
 
+#include "StdInc.h"
 #include <vector>
 #include <list>
 #include "math.h"
@@ -33,13 +34,14 @@ typedef enum {
 class BaseObject {
 
 public:
-    a3dssVector3 pos;
+	guVector pos;
+    //a3dssVector3 pos;
     types type;
     bool destroyable;
     bool active;
-    //functions
+
     BaseObject();
-    BaseObject(float, float, float);
+    BaseObject(f32 x, f32 y, f32 z);
     
 };
 
